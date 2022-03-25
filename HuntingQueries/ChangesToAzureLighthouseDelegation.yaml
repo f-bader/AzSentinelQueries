@@ -1,0 +1,32 @@
+id: 575db994-d562-4e3c-bfe7-bdb7ce5c673a
+name: Changes to Azure Lighthouse delegation
+description: |
+  'Identifies when Azure Lighthouse is used to to delegate resources for access through an other Azure Active Directory tenant.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes:
+      - AzureActivity
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Persistence
+relevantTechniques:
+  - T1136
+query: |
+  AzureActivity
+  | where OperationNameValue =~ "Microsoft.ManagedServices/registrationAssignments/Write"
+  | summarize ActivityStatusValue=make_list(ActivityStatusValue), timestamp = max(TimeGenerated) by IPCustomEntity=CallerIpAddress, AccountCustomEntity=Caller, SubscriptionId, OperationNameValue, CorrelationId
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountCustomEntity
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPCustomEntity
+version: 1.0.0
+kind: Scheduled

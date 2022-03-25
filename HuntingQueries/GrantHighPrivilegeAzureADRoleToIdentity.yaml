@@ -1,0 +1,43 @@
+id: 7c4bdb51-daa8-4f0e-b185-f79e488794d1
+name: Grant high privilege Azure AD role to identity
+description: |
+  'Identifies when a Azure AD user or other Azure AD identity is added to a high privilege Azure AD role'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: AuditLogs
+    dataTypes:
+      - AuditLogs
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Persistence
+relevantTechniques:
+  - T1098
+query: |
+  let HighPrivRoles = dynamic(["Company Administrator","Privileged Authentication Administrator","Privileged Role Administrator"]);
+  AuditLogs
+  | where OperationName == "Add member to role"
+  | mv-expand TargetResources
+  | mv-expand TargetResources.modifiedProperties
+  | where TargetResources_modifiedProperties.displayName == "Role.DisplayName"
+  | extend TargetObjectId = TargetResources.id
+  | extend TargetObjectDisplayName = TargetResources.displayName
+  | extend InitiatedByUserPrincipalName = InitiatedBy.user.userPrincipalName
+  | extend AddedToRole = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
+  | where AddedToRole in~ (HighPrivRoles)
+  | extend IPCustomEntity = todynamic(InitiatedBy).user.ipAddress
+  | extend ServicePrincipalAppId = todynamic(TargetResources).modifiedProperties[5].displayName
+  | project timestamp = TimeGenerated, IPCustomEntity, AccountCustomEntity=InitiatedByUserPrincipalName,TargetObjectId,TargetObjectDisplayName, AddedToRole
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountCustomEntity
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPCustomEntity
+version: 1.0.0
+kind: Scheduled

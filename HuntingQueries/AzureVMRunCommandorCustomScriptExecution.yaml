@@ -1,0 +1,39 @@
+id: e26fd335-b592-451d-88ae-ba7d0d58e2f0
+name: Azure VM Run Command or Custom Script execution
+description: |
+  'Identifies when Azure Run command is used to execute a powershell script on a VM.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: AzureActivity
+    dataTypes:
+      - AzureActivity
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - LateralMovement
+  - CredentialAccess
+relevantTechniques:
+  - T1570
+query: |
+  AzureActivity 
+  | where CategoryValue == "Administrative"
+  | where OperationNameValue =~ "Microsoft.Compute/virtualMachines/runCommand/action"
+  | extend VMName = tostring(todynamic(Properties).resource)
+  | summarize make_list(ActivityStatusValue), timestamp = max(TimeGenerated) by CorrelationId, IPCustomEntity=CallerIpAddress, AccountCustomEntity=Caller, ResourceGroup, HostCustomEntity=VMName
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountCustomEntity
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPCustomEntity
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: HostCustomEntity
+version: 1.0.0
+kind: Scheduled

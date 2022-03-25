@@ -1,0 +1,41 @@
+id: e57acdbc-fc60-42eb-8666-da9ce7bbf66e
+name: Grant high privilege Microsoft Graph permissions
+description: |
+  'Identifies when an Application registration was granted a high privilege Microsoft Graph permission'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: AuditLogs
+    dataTypes:
+      - AuditLogs
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Persistence
+relevantTechniques:
+  - T1098
+query: |
+  let DangerousPermissions = dynamic(["AppRoleAssignment.ReadWrite.All","Application.ReadWrite.All","RoleManagement.ReadWrite.Directory"]);
+  AuditLogs
+  | where OperationName == "Add app role assignment to service principal"
+  | mv-expand TargetResources
+  | mv-expand TargetResources.modifiedProperties
+  | where TargetResources_modifiedProperties.displayName == "AppRole.Value"
+  | extend InitiatedByUserPrincipalName = InitiatedBy.user.userPrincipalName
+  | extend AddedPermission = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
+  | where AddedPermission in~ ( DangerousPermissions )
+  | extend IPCustomEntity = todynamic(InitiatedBy).user.ipAddress
+  | extend ServicePrincipalAppId = todynamic(TargetResources).modifiedProperties[5].displayName
+  | project timestamp = TimeGenerated, IPCustomEntity, AccountCustomEntity=InitiatedByUserPrincipalName, ServicePrincipalAppId, AddedPermission
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountCustomEntity
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPCustomEntity
+version: 1.0.0
+kind: Scheduled

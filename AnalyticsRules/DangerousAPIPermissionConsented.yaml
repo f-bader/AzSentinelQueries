@@ -1,0 +1,59 @@
+suppressionDuration: 5h
+queryPeriod: 31m
+kind: Scheduled
+tactics:
+- Persistence
+description: |
+  One or more high priv API permission were granted to an application.
+
+  Check if this is really necessary and otherwise remove the permissions
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - identifier: FullName
+    columnName: AccountCustomEntity
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPCustomEntity
+suppressionEnabled: false
+queryFrequency: 31m
+triggerOperator: gt
+name: 'Dangerous API permission consented'
+triggerThreshold: 0
+query: |-
+  let DangerousPermissions = dynamic(["AppRoleAssignment.ReadWrite.All","Application.ReadWrite.All","RoleManagement.ReadWrite.Directory"]);
+  AuditLogs
+  | where OperationName == "Add app role assignment to service principal"
+  | where Result =~ "success"
+  | mv-expand TargetResources
+  | mv-expand TargetResources.modifiedProperties
+  | where TargetResources_modifiedProperties.name == "AppRole.Value"
+  | extend InitiatingUserOrApp = tostring(InitiatedBy.user.userPrincipalName)
+  | extend InitiatingIpAddress = tostring(InitiatedBy.user.ipAddress)
+  | extend UserAgent = iff(AdditionalDetails[0].key == "User-Agent",tostring(AdditionalDetails[0].value),"")
+  | extend AddedPermission = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
+  | where AddedPermission in~ ( DangerousPermissions )
+  | mv-expand TargetResources.modifiedProperties
+  | where TargetResources_modifiedProperties.name == "ServicePrincipal.ObjectID"
+  | extend ServicePrincipalObjectID = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
+  | extend timestamp = TimeGenerated, AccountCustomEntity = InitiatingUserOrApp, IPCustomEntity = InitiatingIpAddress
+enabled: true
+id: c44269aa-9879-42d9-a8f4-56a93bb8c6ac
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: false
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: SingleAlert
+customDetails:
+  ServicePrincipalId: ServicePrincipalObjectID
+  AddedPermission: AddedPermission
+severity: High
+

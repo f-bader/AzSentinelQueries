@@ -1,4 +1,4 @@
-# Azure Attack Paths Sentinel queries
+# Microsoft Sentinel hunting queries and Analytics rules
 
 ![Azure Attack Paths](./images/AzureDominancePathsColor.png)
 

@@ -1,0 +1,51 @@
+kind: Scheduled
+description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
+entityMappings:
+- entityType: CloudApplication
+  fieldMappings:
+  - identifier: AppId
+    columnName: AppId
+- entityType: CloudApplication
+  fieldMappings:
+  - identifier: Name
+    columnName: Appname
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+- entityType: Account
+  fieldMappings:
+  - identifier: FullName
+    columnName: UserPrincipalName
+- entityType: Account
+  fieldMappings:
+  - identifier: AadUserId
+    columnName: UserId
+suppressionDuration: 5h
+name: Potential malicious sign-in from Azure AD Connect account (UEBA)
+id: a4fe163e-aec6-407c-8240-ef280742a5f4
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 1h
+    matchingMethod: Selected
+    groupByEntities:
+    - Account
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+queryFrequency: 1h
+query: "let DirectorySyncAdmins = (IdentityInfo\r\n    | where TimeGenerated > ago(14d)\r\n    | where AssignedRoles contains \"Directory Synchronization Accounts\"\r\n    | distinct AccountUPN);\r\nunion isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where TimeGenerated > ago(1h)\r\n| where UserPrincipalName in ( DirectorySyncAdmins )\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and Resourcename != \"Windows Azure Active Directory\""
+suppressionEnabled: false
+severity: High
+queryPeriod: 14d
+relevantTechniques:
+- T0859
+tactics:
+- LateralMovement
+triggerThreshold: 0
+triggerOperator: gt
+

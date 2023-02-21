@@ -47,5 +47,5 @@ entityMappings:
   fieldMappings:
   - identifier: AadUserId
     columnName: UserId
-query: "union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where TimeGenerated > ago(90d)\r\n| where UserPrincipalName startswith \"Sync_\" and UserPrincipalName endswith \"onmicrosoft.com\"\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and Resourcename != \"Windows Azure Active Directory\""
+query: "union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where UserPrincipalName startswith \"Sync_\" and UserPrincipalName endswith \"onmicrosoft.com\"\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and Resourcename != \"Windows Azure Active Directory\""
 

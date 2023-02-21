@@ -1,0 +1,51 @@
+suppressionDuration: 5h
+severity: High
+description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
+triggerThreshold: 0
+kind: Scheduled
+queryFrequency: 30m
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 1h
+    matchingMethod: Selected
+    groupByEntities:
+    - Account
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+suppressionEnabled: false
+id: c8fac852-f10c-4962-b0fb-11722e8c9bb8
+name: Potential malicious sign-in from Azure AD Connect account
+queryPeriod: 30m
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+triggerOperator: gt
+tactics:
+- LateralMovement
+relevantTechniques:
+- T0859
+entityMappings:
+- entityType: CloudApplication
+  fieldMappings:
+  - identifier: AppId
+    columnName: AppId
+- entityType: CloudApplication
+  fieldMappings:
+  - identifier: Name
+    columnName: Appname
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+- entityType: Account
+  fieldMappings:
+  - identifier: FullName
+    columnName: UserPrincipalName
+- entityType: Account
+  fieldMappings:
+  - identifier: AadUserId
+    columnName: UserId
+query: "union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where TimeGenerated > ago(90d)\r\n| where UserPrincipalName startswith \"Sync_\" and UserPrincipalName endswith \"onmicrosoft.com\"\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and Resourcename != \"Windows Azure Active Directory\""
+

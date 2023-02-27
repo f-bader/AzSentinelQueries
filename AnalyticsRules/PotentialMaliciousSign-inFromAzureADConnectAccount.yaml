@@ -3,6 +3,7 @@ severity: High
 description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
 triggerThreshold: 0
 kind: Scheduled
+version: 1.0.0
 queryFrequency: 30m
 incidentConfiguration:
   createIncident: true

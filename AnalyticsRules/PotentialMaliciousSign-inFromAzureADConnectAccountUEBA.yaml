@@ -1,4 +1,5 @@
 kind: Scheduled
+version: 1.0.0
 description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
 entityMappings:
 - entityType: CloudApplication

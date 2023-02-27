@@ -1,6 +1,7 @@
 suppressionDuration: 5h
 severity: High
 kind: Scheduled
+version: 1.0.0
 description: The Azure AD Connect account is performing different sensitive actions that must not be done by this account. This is a sign of compromise for this accounts and should result in immediate action.
 triggerThreshold: 0
 customDetails:

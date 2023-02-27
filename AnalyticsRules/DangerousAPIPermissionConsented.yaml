@@ -1,6 +1,7 @@
 suppressionDuration: 5h
 queryPeriod: 31m
 kind: Scheduled
+version: 1.0.0
 tactics:
 - Persistence
 description: |

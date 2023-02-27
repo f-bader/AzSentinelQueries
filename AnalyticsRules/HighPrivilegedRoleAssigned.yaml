@@ -1,25 +1,16 @@
-suppressionDuration: 5h
-queryPeriod: 30m
-kind: Scheduled
+id: fa2dbd7d-0db5-4b9e-91f8-8547e6059050
+name: High Privileged Role assigned
 version: 1.0.0
+kind: Scheduled
+description: A user was assigned a high privileged role
+severity: Low
+queryFrequency: 30m
+queryPeriod: 30m
+triggerOperator: gt
+triggerThreshold: 0
 tactics:
 - PrivilegeEscalation
-description: A user was assigned a high privileged role
-entityMappings:
-- entityType: Account
-  fieldMappings:
-  - identifier: FullName
-    columnName: Actor
-- entityType: Account
-  fieldMappings:
-  - identifier: FullName
-    columnName: TargetUsername
-suppressionEnabled: false
-queryFrequency: 30m
-triggerOperator: gt
-name: 'High Privileged Role assigned'
-triggerThreshold: 0
-query: |+
+query: |
   let HighPrivRoles = dynamic(["Global Administrator","Company Administrator","Privileged Authentication Administrator","Privileged Role Administrator"]);
   AuditLogs
   | where OperationName == "Add member to role"
@@ -30,21 +21,29 @@ query: |+
   | where AddedToRole in~ (HighPrivRoles)
   | extend Actor = iff(isnotempty(InitiatedBy.user.userPrincipalName),InitiatedBy.user.userPrincipalName,InitiatedBy.app.servicePrincipalId)
   | extend TargetUsername = TargetResources.userPrincipalName
-enabled: true
-id: fa2dbd7d-0db5-4b9e-91f8-8547e6059050
+suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:
-    enabled: false
-    reopenClosedIncident: false
-    lookbackDuration: 5h
     matchingMethod: AllEntities
+    reopenClosedIncident: false
+    groupByCustomDetails: []
     groupByEntities: []
     groupByAlertDetails: []
-    groupByCustomDetails: []
+    lookbackDuration: 5h
+    enabled: false
 eventGroupingSettings:
   aggregationKind: AlertPerResult
 customDetails:
   AddedToRole: AddedToRole
-severity: Low
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - columnName: Actor
+    identifier: FullName
+- entityType: Account
+  fieldMappings:
+  - columnName: TargetUsername
+    identifier: FullName
+suppressionDuration: 5h
 

@@ -1,52 +1,52 @@
-suppressionDuration: 5h
-severity: High
-description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
-triggerThreshold: 0
-kind: Scheduled
-version: 1.0.0
-queryFrequency: 30m
-incidentConfiguration:
-  createIncident: true
-  groupingConfiguration:
-    enabled: true
-    reopenClosedIncident: false
-    lookbackDuration: 1h
-    matchingMethod: Selected
-    groupByEntities:
-    - Account
-    groupByAlertDetails: []
-    groupByCustomDetails: []
-suppressionEnabled: false
 id: c8fac852-f10c-4962-b0fb-11722e8c9bb8
 name: Potential malicious sign-in from Azure AD Connect account
+version: 1.0.0
+kind: Scheduled
+description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
+severity: High
+queryFrequency: 30m
 queryPeriod: 30m
-eventGroupingSettings:
-  aggregationKind: AlertPerResult
 triggerOperator: gt
+triggerThreshold: 0
 tactics:
 - LateralMovement
 relevantTechniques:
 - T0859
+query: "union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where UserPrincipalName startswith \"Sync_\" and UserPrincipalName endswith \"onmicrosoft.com\"\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and Resourcename != \"Windows Azure Active Directory\""
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    matchingMethod: Selected
+    reopenClosedIncident: false
+    groupByCustomDetails: []
+    groupByEntities:
+    - Account
+    groupByAlertDetails: []
+    lookbackDuration: 1h
+    enabled: true
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
 entityMappings:
 - entityType: CloudApplication
   fieldMappings:
-  - identifier: AppId
-    columnName: AppId
+  - columnName: AppId
+    identifier: AppId
 - entityType: CloudApplication
   fieldMappings:
-  - identifier: Name
-    columnName: Appname
+  - columnName: Appname
+    identifier: Name
 - entityType: IP
   fieldMappings:
-  - identifier: Address
-    columnName: IPAddress
+  - columnName: IPAddress
+    identifier: Address
 - entityType: Account
   fieldMappings:
-  - identifier: FullName
-    columnName: UserPrincipalName
+  - columnName: UserPrincipalName
+    identifier: FullName
 - entityType: Account
   fieldMappings:
-  - identifier: AadUserId
-    columnName: UserId
-query: "union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where UserPrincipalName startswith \"Sync_\" and UserPrincipalName endswith \"onmicrosoft.com\"\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and Resourcename != \"Windows Azure Active Directory\""
+  - columnName: UserId
+    identifier: AadUserId
+suppressionEnabled: false
 

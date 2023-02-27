@@ -1,27 +1,18 @@
-suppressionDuration: 5h
-queryPeriod: 31m
-kind: Scheduled
+id: c44269aa-9879-42d9-a8f4-56a93bb8c6ac
+name: Dangerous API permission consented
 version: 1.0.0
-tactics:
-- Persistence
+kind: Scheduled
 description: |
   One or more high priv API permission were granted to an application.
 
   Check if this is really necessary and otherwise remove the permissions
-entityMappings:
-- entityType: Account
-  fieldMappings:
-  - identifier: FullName
-    columnName: AccountCustomEntity
-- entityType: IP
-  fieldMappings:
-  - identifier: Address
-    columnName: IPCustomEntity
-suppressionEnabled: false
+severity: High
 queryFrequency: 31m
+queryPeriod: 31m
 triggerOperator: gt
-name: 'Dangerous API permission consented'
 triggerThreshold: 0
+tactics:
+- Persistence
 query: |-
   let DangerousPermissions = dynamic(["AppRoleAssignment.ReadWrite.All","Application.ReadWrite.All","RoleManagement.ReadWrite.Directory"]);
   AuditLogs
@@ -39,22 +30,30 @@ query: |-
   | where TargetResources_modifiedProperties.name == "ServicePrincipal.ObjectID"
   | extend ServicePrincipalObjectID = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
   | extend timestamp = TimeGenerated, AccountCustomEntity = InitiatingUserOrApp, IPCustomEntity = InitiatingIpAddress
-enabled: true
-id: c44269aa-9879-42d9-a8f4-56a93bb8c6ac
+suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:
-    enabled: false
-    reopenClosedIncident: false
-    lookbackDuration: 5h
     matchingMethod: AllEntities
+    reopenClosedIncident: false
+    groupByCustomDetails: []
     groupByEntities: []
     groupByAlertDetails: []
-    groupByCustomDetails: []
+    lookbackDuration: 5h
+    enabled: false
 eventGroupingSettings:
   aggregationKind: SingleAlert
 customDetails:
   ServicePrincipalId: ServicePrincipalObjectID
   AddedPermission: AddedPermission
-severity: High
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - columnName: AccountCustomEntity
+    identifier: FullName
+- entityType: IP
+  fieldMappings:
+  - columnName: IPCustomEntity
+    identifier: Address
+suppressionDuration: 5h
 

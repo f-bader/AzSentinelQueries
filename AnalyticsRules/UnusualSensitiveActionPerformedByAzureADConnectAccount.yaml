@@ -1,30 +1,13 @@
-suppressionDuration: 5h
-severity: High
-kind: Scheduled
-version: 1.0.0
-description: The Azure AD Connect account is performing different sensitive actions that must not be done by this account. This is a sign of compromise for this accounts and should result in immediate action.
-triggerThreshold: 0
-customDetails:
-  Activity: OperationName
-queryFrequency: 30m
-incidentConfiguration:
-  createIncident: true
-  groupingConfiguration:
-    enabled: true
-    reopenClosedIncident: false
-    lookbackDuration: 1h
-    matchingMethod: Selected
-    groupByEntities:
-    - Account
-    groupByAlertDetails: []
-    groupByCustomDetails: []
-suppressionEnabled: false
 id: 1919c832-b23f-46bb-a110-e275b546dc78
 name: Unusual sensitive action performed by Azure AD Connect account
+version: 1.0.0
+kind: Scheduled
+description: The Azure AD Connect account is performing different sensitive actions that must not be done by this account. This is a sign of compromise for this accounts and should result in immediate action.
+severity: High
+queryFrequency: 30m
 queryPeriod: 30m
-eventGroupingSettings:
-  aggregationKind: AlertPerResult
 triggerOperator: gt
+triggerThreshold: 0
 tactics:
 - LateralMovement
 - Persistence
@@ -37,23 +20,6 @@ relevantTechniques:
 - T0859
 - T1078
 - T0890
-entityMappings:
-- entityType: Account
-  fieldMappings:
-  - identifier: FullName
-    columnName: InitiatedByUPN
-- entityType: CloudApplication
-  fieldMappings:
-  - identifier: AppId
-    columnName: TargetResourcesId
-- entityType: IP
-  fieldMappings:
-  - identifier: Address
-    columnName: InitiatedByIpAddress
-- entityType: CloudApplication
-  fieldMappings:
-  - identifier: Name
-    columnName: TargetResourcesname
 query: |-
   let SensitiveActions = dynamic(["Update service principal","Add service principal credentials","Add owner to service principal","Add delegated permission grant"]);
   AuditLogs
@@ -65,4 +31,38 @@ query: |-
   | extend TargetResourcesname = TargetResources.name
   | extend TargetResourcesId = TargetResources.id
   | extend InitiatedByIpAddress = parse_json(tostring(InitiatedBy.user)).ipAddress
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    matchingMethod: Selected
+    reopenClosedIncident: false
+    groupByCustomDetails: []
+    groupByEntities:
+    - Account
+    groupByAlertDetails: []
+    lookbackDuration: 1h
+    enabled: true
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+customDetails:
+  Activity: OperationName
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - columnName: InitiatedByUPN
+    identifier: FullName
+- entityType: CloudApplication
+  fieldMappings:
+  - columnName: TargetResourcesId
+    identifier: AppId
+- entityType: IP
+  fieldMappings:
+  - columnName: InitiatedByIpAddress
+    identifier: Address
+- entityType: CloudApplication
+  fieldMappings:
+  - columnName: TargetResourcesname
+    identifier: Name
+suppressionEnabled: false
 

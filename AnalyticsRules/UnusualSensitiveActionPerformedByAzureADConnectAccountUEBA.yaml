@@ -1,40 +1,25 @@
-kind: Scheduled
-version: 1.0.0
-description: The Azure AD Connect account is performing different sensitive actions that must not be done by this account. This is a sign of compromise for this accounts and should result in immediate action.
-entityMappings:
-- entityType: Account
-  fieldMappings:
-  - identifier: FullName
-    columnName: InitiatedByUPN
-- entityType: CloudApplication
-  fieldMappings:
-  - identifier: AppId
-    columnName: TargetResourcesId
-- entityType: IP
-  fieldMappings:
-  - identifier: Address
-    columnName: InitiatedByIpAddress
-- entityType: CloudApplication
-  fieldMappings:
-  - identifier: Name
-    columnName: TargetResourcesname
-suppressionDuration: 5h
-name: Unusual sensitive action performed by Azure AD Connect account (UEBA)
 id: 23fd3ffc-3d2f-4415-89ad-ce2b6450a5c3
-incidentConfiguration:
-  createIncident: true
-  groupingConfiguration:
-    enabled: true
-    reopenClosedIncident: false
-    lookbackDuration: 1h
-    matchingMethod: Selected
-    groupByEntities:
-    - Account
-    groupByAlertDetails: []
-    groupByCustomDetails: []
-eventGroupingSettings:
-  aggregationKind: AlertPerResult
+name: Unusual sensitive action performed by Azure AD Connect account (UEBA)
+version: 1.0.0
+kind: Scheduled
+description: The Azure AD Connect account is performing different sensitive actions that must not be done by this account. This is a sign of compromise for this accounts and should result in immediate action.
+severity: High
 queryFrequency: 1h
+queryPeriod: 14d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+- LateralMovement
+- Persistence
+- PrivilegeEscalation
+relevantTechniques:
+- T1550
+- T0859
+- T1098
+- T1078
+- T0859
+- T1078
+- T0890
 query: |-
   let DirectorySyncAdmins = (IdentityInfo
       | where TimeGenerated > ago(14d)
@@ -51,23 +36,38 @@ query: |-
   | extend TargetResourcesname = TargetResources.name
   | extend TargetResourcesId = TargetResources.id
   | extend InitiatedByIpAddress = parse_json(tostring(InitiatedBy.user)).ipAddress
-suppressionEnabled: false
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    matchingMethod: Selected
+    reopenClosedIncident: false
+    groupByCustomDetails: []
+    groupByEntities:
+    - Account
+    groupByAlertDetails: []
+    lookbackDuration: 1h
+    enabled: true
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
 customDetails:
   Activity: OperationName
-severity: High
-queryPeriod: 14d
-relevantTechniques:
-- T1550
-- T0859
-- T1098
-- T1078
-- T0859
-- T1078
-- T0890
-tactics:
-- LateralMovement
-- Persistence
-- PrivilegeEscalation
-triggerThreshold: 0
-triggerOperator: gt
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - columnName: InitiatedByUPN
+    identifier: FullName
+- entityType: CloudApplication
+  fieldMappings:
+  - columnName: TargetResourcesId
+    identifier: AppId
+- entityType: IP
+  fieldMappings:
+  - columnName: InitiatedByIpAddress
+    identifier: Address
+- entityType: CloudApplication
+  fieldMappings:
+  - columnName: TargetResourcesname
+    identifier: Name
+suppressionEnabled: false
 

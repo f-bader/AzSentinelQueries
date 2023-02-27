@@ -1,24 +1,15 @@
-suppressionDuration: 5h
-queryPeriod: 30m
-kind: Scheduled
+id: b6d4f7fe-2f5b-45e8-8f3d-b259ebe4100a
+name: Owner added to high privileged application
 version: 1.0.0
+kind: Scheduled
+description: An owner was added to application holding high privileged API permissions
+severity: Medium
+queryFrequency: 30m
+queryPeriod: 30m
+triggerOperator: gt
+triggerThreshold: 0
 tactics:
 - PrivilegeEscalation
-description: An owner was added to application holding high privileged API permissions
-entityMappings:
-- entityType: Account
-  fieldMappings:
-  - identifier: FullName
-    columnName: TargetUser
-- entityType: Account
-  fieldMappings:
-  - identifier: FullName
-    columnName: Actor
-suppressionEnabled: false
-queryFrequency: 30m
-triggerOperator: gt
-name: 'Owner added to high privileged application'
-triggerThreshold: 0
 query: |-
   AuditLogs
   | where OperationName == "Add owner to application"
@@ -26,21 +17,29 @@ query: |-
   | join kind=inner _GetWatchlist('HighRiskApps') on SearchKey
   | extend TargetUser = tostring(TargetResources[0].userPrincipalName)
   | extend Actor = tostring(InitiatedBy.user.userPrincipalName)
-enabled: true
-id: b6d4f7fe-2f5b-45e8-8f3d-b259ebe4100a
+suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:
-    enabled: false
-    reopenClosedIncident: false
-    lookbackDuration: 5h
     matchingMethod: AllEntities
+    reopenClosedIncident: false
+    groupByCustomDetails: []
     groupByEntities: []
     groupByAlertDetails: []
-    groupByCustomDetails: []
+    lookbackDuration: 5h
+    enabled: false
 eventGroupingSettings:
   aggregationKind: AlertPerResult
 customDetails:
   Appname: name
-severity: Medium
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - columnName: TargetUser
+    identifier: FullName
+- entityType: Account
+  fieldMappings:
+  - columnName: Actor
+    identifier: FullName
+suppressionDuration: 5h
 

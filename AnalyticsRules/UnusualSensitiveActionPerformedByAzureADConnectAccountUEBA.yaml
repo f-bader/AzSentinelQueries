@@ -27,7 +27,7 @@ query: |-
       | distinct AccountUPN);
   let SensitiveActions = dynamic(["Update service principal", "Add service principal credentials", "Add owner to service principal", "Add delegated permission grant"]);
   AuditLogs
-  | where TimeGenerated > ago(1h)
+  | where ingestion_time() > ago(70m)
   | extend InitiatedByUPN = parse_json(tostring(InitiatedBy.user)).userPrincipalName
   | where InitiatedByUPN in ( DirectorySyncAdmins )
   | where OperationName in~ (SensitiveActions)

@@ -9,10 +9,10 @@ queryPeriod: 35m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-- Execution
-- LateralMovement
+  - Execution
+  - LateralMovement
 relevantTechniques:
-- T1059
+  - T1059
 query: "AzureActivity \r\n| where CategoryValue == \"Administrative\"\r\n| where OperationNameValue =~ \"Microsoft.Compute/virtualMachines/runCommand/action\"\r\n| extend VMName = tostring(todynamic(Properties).resource)\r\n| summarize make_list(ActivityStatusValue), TimeGenerated = max(TimeGenerated) by CorrelationId, CallerIpAddress, Caller, ResourceGroup, VMName"
 suppressionDuration: 5h
 incidentConfiguration:
@@ -28,13 +28,12 @@ incidentConfiguration:
 eventGroupingSettings:
   aggregationKind: AlertPerResult
 entityMappings:
-- entityType: Account
-  fieldMappings:
-  - columnName: Caller
-    identifier: AadUserId
-- entityType: Host
-  fieldMappings:
-  - columnName: VMName
-    identifier: HostName
+  - entityType: Account
+    fieldMappings:
+      - columnName: Caller
+        identifier: AadUserId
+  - entityType: Host
+    fieldMappings:
+      - columnName: VMName
+        identifier: HostName
 suppressionEnabled: false
-

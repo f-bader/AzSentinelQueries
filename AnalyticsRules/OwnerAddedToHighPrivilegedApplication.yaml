@@ -9,7 +9,7 @@ queryPeriod: 30m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-- PrivilegeEscalation
+  - PrivilegeEscalation
 query: |-
   AuditLogs
   | where OperationName == "Add owner to application"
@@ -33,13 +33,12 @@ eventGroupingSettings:
 customDetails:
   Appname: name
 entityMappings:
-- entityType: Account
-  fieldMappings:
-  - columnName: TargetUser
-    identifier: FullName
-- entityType: Account
-  fieldMappings:
-  - columnName: Actor
-    identifier: FullName
+  - entityType: Account
+    fieldMappings:
+      - columnName: TargetUser
+        identifier: FullName
+  - entityType: Account
+    fieldMappings:
+      - columnName: Actor
+        identifier: FullName
 suppressionDuration: 5h
-

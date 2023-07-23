@@ -12,7 +12,7 @@ queryPeriod: 31m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-- Persistence
+  - Persistence
 query: |-
   let DangerousPermissions = dynamic(["AppRoleAssignment.ReadWrite.All","Application.ReadWrite.All","RoleManagement.ReadWrite.Directory"]);
   AuditLogs
@@ -47,13 +47,12 @@ customDetails:
   ServicePrincipalId: ServicePrincipalObjectID
   AddedPermission: AddedPermission
 entityMappings:
-- entityType: Account
-  fieldMappings:
-  - columnName: AccountCustomEntity
-    identifier: FullName
-- entityType: IP
-  fieldMappings:
-  - columnName: IPCustomEntity
-    identifier: Address
+  - entityType: Account
+    fieldMappings:
+      - columnName: AccountCustomEntity
+        identifier: FullName
+  - entityType: IP
+    fieldMappings:
+      - columnName: IPCustomEntity
+        identifier: Address
 suppressionDuration: 5h
-

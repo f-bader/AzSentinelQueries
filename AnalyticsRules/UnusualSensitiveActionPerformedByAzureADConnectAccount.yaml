@@ -9,17 +9,17 @@ queryPeriod: 30m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-- LateralMovement
-- Persistence
-- PrivilegeEscalation
+  - LateralMovement
+  - Persistence
+  - PrivilegeEscalation
 relevantTechniques:
-- T1550
-- T0859
-- T1098
-- T1078
-- T0859
-- T1078
-- T0890
+  - T1550
+  - T0859
+  - T1098
+  - T1078
+  - T0859
+  - T1078
+  - T0890
 query: |-
   let SensitiveActions = dynamic(["Update service principal","Add service principal credentials","Add owner to service principal","Add delegated permission grant"]);
   AuditLogs
@@ -39,7 +39,7 @@ incidentConfiguration:
     reopenClosedIncident: false
     groupByCustomDetails: []
     groupByEntities:
-    - Account
+      - Account
     groupByAlertDetails: []
     lookbackDuration: 1h
     enabled: true
@@ -48,21 +48,20 @@ eventGroupingSettings:
 customDetails:
   Activity: OperationName
 entityMappings:
-- entityType: Account
-  fieldMappings:
-  - columnName: InitiatedByUPN
-    identifier: FullName
-- entityType: CloudApplication
-  fieldMappings:
-  - columnName: TargetResourcesId
-    identifier: AppId
-- entityType: IP
-  fieldMappings:
-  - columnName: InitiatedByIpAddress
-    identifier: Address
-- entityType: CloudApplication
-  fieldMappings:
-  - columnName: TargetResourcesname
-    identifier: Name
+  - entityType: Account
+    fieldMappings:
+      - columnName: InitiatedByUPN
+        identifier: FullName
+  - entityType: CloudApplication
+    fieldMappings:
+      - columnName: TargetResourcesId
+        identifier: AppId
+  - entityType: IP
+    fieldMappings:
+      - columnName: InitiatedByIpAddress
+        identifier: Address
+  - entityType: CloudApplication
+    fieldMappings:
+      - columnName: TargetResourcesname
+        identifier: Name
 suppressionEnabled: false
-

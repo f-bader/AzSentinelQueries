@@ -9,9 +9,9 @@ queryPeriod: 1d
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-- ResourceDevelopment
+  - ResourceDevelopment
 relevantTechniques:
-- T1583
+  - T1583
 query: |
   RegisteredDomains_CL
   | where QueryType_s == "domainsearch"
@@ -34,23 +34,22 @@ eventGroupingSettings:
   aggregationKind: AlertPerResult
 alertDetailsOverride:
   alertDynamicProperties: []
-  alertnameFormat: 'New domain registered: {{DomainName}}'
+  alertnameFormat: "New domain registered: {{DomainName}}"
   alertDescriptionFormat: "A new domain was registered that contains the keyword \"{{SearchTerm}}\"\n\nThis could be a first step in setting up malicious infrastructure for e.g. phishing or email fraud attempts.\n\nCheck if this domain was registered by your company, otherwise block this URL for incoming emails and add it as custom block indicator for Microsoft Defender for Endpoint and Microsoft Sentinel "
 customDetails:
   DomainIsActive: IsActive
   SearchTerm: SearchTerm
 entityMappings:
-- entityType: URL
-  fieldMappings:
-  - columnName: DetonateHTTPSUrl
-    identifier: Url
-- entityType: URL
-  fieldMappings:
-  - columnName: DetonateHTTPUrl
-    identifier: Url
-- entityType: DNS
-  fieldMappings:
-  - columnName: DomainName
-    identifier: DomainName
+  - entityType: URL
+    fieldMappings:
+      - columnName: DetonateHTTPSUrl
+        identifier: Url
+  - entityType: URL
+    fieldMappings:
+      - columnName: DetonateHTTPUrl
+        identifier: Url
+  - entityType: DNS
+    fieldMappings:
+      - columnName: DomainName
+        identifier: DomainName
 suppressionEnabled: false
-

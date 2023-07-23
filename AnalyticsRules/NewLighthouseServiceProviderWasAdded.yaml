@@ -9,7 +9,7 @@ queryPeriod: 30m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-- Persistence
+  - Persistence
 query: |-
   AzureActivity
   | where OperationNameValue =~ "Microsoft.ManagedServices/registrationAssignments/Write"
@@ -28,17 +28,16 @@ incidentConfiguration:
 eventGroupingSettings:
   aggregationKind: SingleAlert
 entityMappings:
-- entityType: Account
-  fieldMappings:
-  - columnName: AccountCustomEntity
-    identifier: FullName
-- entityType: IP
-  fieldMappings:
-  - columnName: IPCustomEntity
-    identifier: Address
-- entityType: AzureResource
-  fieldMappings:
-  - columnName: SubscriptionId
-    identifier: ResourceId
+  - entityType: Account
+    fieldMappings:
+      - columnName: AccountCustomEntity
+        identifier: FullName
+  - entityType: IP
+    fieldMappings:
+      - columnName: IPCustomEntity
+        identifier: Address
+  - entityType: AzureResource
+    fieldMappings:
+      - columnName: SubscriptionId
+        identifier: ResourceId
 suppressionDuration: 5h
-

@@ -9,7 +9,7 @@ queryPeriod: 30m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-- PrivilegeEscalation
+  - PrivilegeEscalation
 query: |
   let HighPrivRoles = dynamic(["Global Administrator","Company Administrator","Privileged Authentication Administrator","Privileged Role Administrator"]);
   AuditLogs
@@ -37,13 +37,12 @@ eventGroupingSettings:
 customDetails:
   AddedToRole: AddedToRole
 entityMappings:
-- entityType: Account
-  fieldMappings:
-  - columnName: Actor
-    identifier: FullName
-- entityType: Account
-  fieldMappings:
-  - columnName: TargetUsername
-    identifier: FullName
+  - entityType: Account
+    fieldMappings:
+      - columnName: Actor
+        identifier: FullName
+  - entityType: Account
+    fieldMappings:
+      - columnName: TargetUsername
+        identifier: FullName
 suppressionDuration: 5h
-

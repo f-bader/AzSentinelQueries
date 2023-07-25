@@ -10,13 +10,13 @@ triggerOperator: gt
 triggerThreshold: 0
 tactics:
   - PrivilegeEscalation
-query: |
+query: |+
   let HighPrivRoles = dynamic(["Global Administrator","Company Administrator","Privileged Authentication Administrator","Privileged Role Administrator"]);
   AuditLogs
   | where OperationName == "Add member to role"
   | mv-expand TargetResources
   | mv-expand TargetResources.modifiedProperties
-  | where TargetResources_modifiedProperties.name == "Role.name"
+  | where TargetResources_modifiedProperties.displayName == "Role.DisplayName"
   | extend AddedToRole = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
   | where AddedToRole in~ (HighPrivRoles)
   | extend Actor = iff(isnotempty(InitiatedBy.user.userPrincipalName),InitiatedBy.user.userPrincipalName,InitiatedBy.app.servicePrincipalId)
@@ -25,13 +25,13 @@ suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:
-    matchingMethod: AllEntities
+    enabled: false
     reopenClosedIncident: false
-    groupByCustomDetails: []
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
     groupByEntities: []
     groupByAlertDetails: []
-    lookbackDuration: 5h
-    enabled: false
+    groupByCustomDetails: []
 eventGroupingSettings:
   aggregationKind: AlertPerResult
 customDetails:
@@ -39,10 +39,10 @@ customDetails:
 entityMappings:
   - entityType: Account
     fieldMappings:
-      - columnName: Actor
-        identifier: FullName
+      - identifier: FullName
+        columnName: Actor
   - entityType: Account
     fieldMappings:
-      - columnName: TargetUsername
-        identifier: FullName
+      - identifier: FullName
+        columnName: TargetUsername
 suppressionDuration: 5h

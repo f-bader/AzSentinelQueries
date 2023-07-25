@@ -13,27 +13,32 @@ tactics:
   - LateralMovement
 relevantTechniques:
   - T1059
-query: "AzureActivity \r\n| where CategoryValue == \"Administrative\"\r\n| where OperationNameValue =~ \"Microsoft.Compute/virtualMachines/runCommand/action\"\r\n| extend VMName = tostring(todynamic(Properties).resource)\r\n| summarize make_list(ActivityStatusValue), TimeGenerated = max(TimeGenerated) by CorrelationId, CallerIpAddress, Caller, ResourceGroup, VMName"
-suppressionDuration: 5h
+query: |-
+  AzureActivity 
+  | where CategoryValue == "Administrative"
+  | where OperationNameValue =~ "Microsoft.Compute/virtualMachines/runCommand/action"
+  | extend VMName = tostring(todynamic(Properties).resource)
+  | summarize make_list(ActivityStatusValue), TimeGenerated = max(TimeGenerated) by CorrelationId, CallerIpAddress, Caller, ResourceGroup, VMName
+suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:
-    matchingMethod: AllEntities
+    enabled: false
     reopenClosedIncident: false
-    groupByCustomDetails: []
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
     groupByEntities: []
     groupByAlertDetails: []
-    lookbackDuration: 5h
-    enabled: false
+    groupByCustomDetails: []
 eventGroupingSettings:
   aggregationKind: AlertPerResult
 entityMappings:
   - entityType: Account
     fieldMappings:
-      - columnName: Caller
-        identifier: AadUserId
+      - identifier: AadUserId
+        columnName: Caller
   - entityType: Host
     fieldMappings:
-      - columnName: VMName
-        identifier: HostName
-suppressionEnabled: false
+      - identifier: HostName
+        columnName: VMName
+suppressionDuration: 5h

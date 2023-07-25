@@ -18,26 +18,26 @@ suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:
-    matchingMethod: AllEntities
+    enabled: false
     reopenClosedIncident: false
-    groupByCustomDetails: []
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
     groupByEntities: []
     groupByAlertDetails: []
-    lookbackDuration: 5h
-    enabled: false
+    groupByCustomDetails: []
 eventGroupingSettings:
   aggregationKind: SingleAlert
 entityMappings:
   - entityType: Account
     fieldMappings:
-      - columnName: AccountCustomEntity
-        identifier: FullName
+      - identifier: FullName
+        columnName: AccountCustomEntity
   - entityType: IP
     fieldMappings:
-      - columnName: IPCustomEntity
-        identifier: Address
+      - identifier: Address
+        columnName: IPCustomEntity
   - entityType: AzureResource
     fieldMappings:
-      - columnName: SubscriptionId
-        identifier: ResourceId
+      - identifier: ResourceId
+        columnName: SubscriptionId
 suppressionDuration: 5h

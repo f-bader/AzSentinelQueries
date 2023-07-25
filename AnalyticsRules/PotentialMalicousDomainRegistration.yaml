@@ -34,7 +34,7 @@ eventGroupingSettings:
   aggregationKind: AlertPerResult
 alertDetailsOverride:
   alertDynamicProperties: []
-  alertnameFormat: "New domain registered: {{DomainName}}"
+  alertDisplaynameFormat: "New domain registered: {{DomainName}}"
   alertDescriptionFormat: "A new domain was registered that contains the keyword \"{{SearchTerm}}\"\n\nThis could be a first step in setting up malicious infrastructure for e.g. phishing or email fraud attempts.\n\nCheck if this domain was registered by your company, otherwise block this URL for incoming emails and add it as custom block indicator for Microsoft Defender for Endpoint and Microsoft Sentinel "
 customDetails:
   DomainIsActive: IsActive

@@ -1,6 +1,6 @@
 id: c44269aa-9879-42d9-a8f4-56a93bb8c6ac
 name: Dangerous API permission consented
-version: 1.0.0
+version: 1.0.2
 kind: Scheduled
 description: |
   One or more high priv API permission were granted to an application.
@@ -14,23 +14,29 @@ triggerThreshold: 0
 tactics:
   - Persistence
 query: |-
-  let DangerousPermissions = dynamic(["AppRoleAssignment.ReadWrite.All","Application.ReadWrite.All","RoleManagement.ReadWrite.Directory"]);
+  let DangerousAPIPermissions = dynamic({
+      "9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8": "RoleManagement.ReadWrite.Directory -> Directly promote any user to global admin",
+      "06b708a9-e830-4db3-a914-8e69da51d44f": "AppRoleAssignment.ReadWrite.All -> Grant RoleManagement.ReadWrite.Directory, then promote to global admin",
+      "0a3e4e0d-1c4f-4d10-93f7-3b1f145e76e1": "Application.ReadWrite.All -> Act as another entity e.g. a global admin user"
+      });
   AuditLogs
   | where OperationName == "Add app role assignment to service principal"
   | where Result =~ "success"
   | mv-expand TargetResources
+  | where TargetResources.displayName == "Microsoft Graph"
   | mv-expand TargetResources.modifiedProperties
-  | where TargetResources_modifiedProperties.displayName == "AppRole.Value"
-  | extend InitiatingUserOrApp = tostring(InitiatedBy.user.userPrincipalName)
-  | extend InitiatingIpAddress = tostring(InitiatedBy.user.ipAddress)
-  | extend UserAgent = iff(AdditionalDetails[0].key == "User-Agent",tostring(AdditionalDetails[0].value),"")
-  | extend AddedPermission = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
-  | where AddedPermission in~ ( DangerousPermissions )
-  | mv-expand TargetResources.modifiedProperties
-  | where TargetResources_modifiedProperties.displayName == "ServicePrincipal.ObjectID"
-  | extend ServicePrincipalObjectID = replace_string(tostring(TargetResources_modifiedProperties.newValue),'"','')
-  | extend timestamp = TimeGenerated, AccountCustomEntity = InitiatingUserOrApp, IPCustomEntity = InitiatingIpAddress
-suppressionEnabled: false
+  | where TargetResources_modifiedProperties.displayName == "AppRole.Id"
+  // This permission was not part of this application before
+  | where isnull(TargetResources_modifiedProperties.oldValue)
+  // The new permission is part of the dangerous API permissions
+  | extend NewAPIPermission = trim('"', tostring(TargetResources_modifiedProperties.newValue))
+  | extend PotentialImpact = DangerousAPIPermissions[NewAPIPermission]
+  | where isnotempty(PotentialImpact)
+  | extend UserAgent = iff(AdditionalDetails[0].key == "User-Agent", tostring(AdditionalDetails[0].value), "")
+  | extend ServicePrincipalDisplayName = parse_json(tostring(parse_json(tostring(TargetResources.modifiedProperties))[6].newValue))
+  | extend ServicePrincipalObjectID = parse_json(tostring(parse_json(tostring(TargetResources.modifiedProperties))[5].newValue))
+  | extend InitiatingUserOrApp = iff(isnotempty(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.user.userPrincipalName), tostring(InitiatedBy.app.displayName))
+  | extend InitiatingIpAddress = iff(isnotempty(InitiatedBy.user.ipAddress), tostring(InitiatedBy.user.ipAddress), tostring(InitiatedBy.app.ipAddress))
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:
@@ -43,16 +49,21 @@ incidentConfiguration:
     groupByCustomDetails: []
 eventGroupingSettings:
   aggregationKind: SingleAlert
+alertDetailsOverride:
+  alertDescriptionFormat: "A high impact Graph API permission was granted to an application.\n\nThe granted API permission was {{PotentialImpact}} \n\nPlease verify if this API permission is needed by this application and if so make sure to add it to the watchlist \"HighRiskApps\""
+  alertDynamicProperties: []
 customDetails:
   ServicePrincipalId: ServicePrincipalObjectID
-  AddedPermission: AddedPermission
+  ServicePrincipal: ServicePrincipalDisplayName
+  AddedPermission: NewAPIPermission
 entityMappings:
   - entityType: Account
     fieldMappings:
       - identifier: FullName
-        columnName: AccountCustomEntity
+        columnName: InitiatingUserOrApp
   - entityType: IP
     fieldMappings:
       - identifier: Address
-        columnName: IPCustomEntity
+        columnName: InitiatingIpAddress
 suppressionDuration: 5h
+suppressionEnabled: false

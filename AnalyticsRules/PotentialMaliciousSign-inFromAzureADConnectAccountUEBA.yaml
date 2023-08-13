@@ -1,6 +1,6 @@
 id: a4fe163e-aec6-407c-8240-ef280742a5f4
 name: Potential malicious sign-in from Azure AD Connect account (UEBA)
-version: 1.0.0
+version: 1.0.1
 kind: Scheduled
 description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
 severity: High
@@ -12,7 +12,16 @@ tactics:
   - LateralMovement
 relevantTechniques:
   - T0859
-query: "let DirectorySyncAdmins = (IdentityInfo\r\n    | where TimeGenerated > ago(14d)\r\n    | where AssignedRoles contains \"Directory Synchronization Accounts\"\r\n    | distinct AccountUPN);\r\nunion isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where ingestion_time() > ago(70m)\r\n| where UserPrincipalName in ( DirectorySyncAdmins )\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and ResourceDisplayName != \"Windows Azure Active Directory\""
+query: |-
+  let DirectorySyncAdmins = (IdentityInfo
+      | where TimeGenerated > ago(14d)
+      | where AssignedRoles contains "Directory Synchronization Accounts"
+      | distinct tolower(AccountUPN));
+  union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs
+  | where ingestion_time() > ago(70m)
+  | where tolower(UserPrincipalName) in ( DirectorySyncAdmins )
+  // Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD 
+  | where AppId != "cb1056e2-e479-49de-ae31-7812af012ed8" and ResourceDisplayName != "Windows Azure Active Directory"
 suppressionDuration: 5h
 incidentConfiguration:
   createIncident: true

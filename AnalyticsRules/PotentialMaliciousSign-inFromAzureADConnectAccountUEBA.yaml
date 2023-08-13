@@ -16,10 +16,10 @@ query: |-
   let DirectorySyncAdmins = (IdentityInfo
       | where TimeGenerated > ago(14d)
       | where AssignedRoles contains "Directory Synchronization Accounts"
-      | distinct tolower(AccountUPN));
+      | distinct AccountUPN);
   union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs
   | where ingestion_time() > ago(70m)
-  | where tolower(UserPrincipalName) in ( DirectorySyncAdmins )
+  | where UserPrincipalName in~ ( DirectorySyncAdmins )
   // Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD 
   | where AppId != "cb1056e2-e479-49de-ae31-7812af012ed8" and ResourceDisplayName != "Windows Azure Active Directory"
 suppressionDuration: 5h

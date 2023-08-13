@@ -1,6 +1,6 @@
 id: 23fd3ffc-3d2f-4415-89ad-ce2b6450a5c3
 name: Unusual sensitive action performed by Azure AD Connect account (UEBA)
-version: 1.0.0
+version: 1.0.1
 kind: Scheduled
 description: The Azure AD Connect account is performing different sensitive actions that must not be done by this account. This is a sign of compromise for this accounts and should result in immediate action.
 severity: High
@@ -29,7 +29,7 @@ query: |-
   AuditLogs
   | where ingestion_time() > ago(70m)
   | extend InitiatedByUPN = parse_json(tostring(InitiatedBy.user)).userPrincipalName
-  | where InitiatedByUPN in ( DirectorySyncAdmins )
+  | where InitiatedByUPN in~ ( DirectorySyncAdmins )
   | where OperationName in~ (SensitiveActions)
   | mv-expand TargetResources
   | where TargetResources.type == "ServicePrincipal"

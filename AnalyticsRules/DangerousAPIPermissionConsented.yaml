@@ -1,6 +1,6 @@
 id: c44269aa-9879-42d9-a8f4-56a93bb8c6ac
 name: Dangerous API permission consented
-version: 1.0.2
+version: 1.0.3
 kind: Scheduled
 description: |
   One or more high priv API permission were granted to an application.
@@ -17,7 +17,7 @@ query: |-
   let DangerousAPIPermissions = dynamic({
       "9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8": "RoleManagement.ReadWrite.Directory -> Directly promote any user to global admin",
       "06b708a9-e830-4db3-a914-8e69da51d44f": "AppRoleAssignment.ReadWrite.All -> Grant RoleManagement.ReadWrite.Directory, then promote to global admin",
-      "0a3e4e0d-1c4f-4d10-93f7-3b1f145e76e1": "Application.ReadWrite.All -> Act as another entity e.g. a global admin user"
+      "1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9": "Application.ReadWrite.All -> Act as another entity e.g. a global admin user"
       });
   AuditLogs
   | where OperationName == "Add app role assignment to service principal"

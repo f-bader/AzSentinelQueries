@@ -7,7 +7,7 @@ severity: Medium
 query: |-
   MicrosoftGraphActivityLogs
   | where UserAgent has "azurehound"
-  | summarize QueriesSent=count() by UserId, IpAddress, ServicePrincipalId, AppId, TokenIssuedAt, Location, SignInActivityId, SourceSystem, AadTenantId, UserAgent
+  | summarize QueriesSent=count() by UserId, IPAddress, ServicePrincipalId, AppId, TokenIssuedAt, Location, SignInActivityId, SourceSystem, AadTenantId, UserAgent
   | extend ConfidenceScore = 1
   | extend RemediationSteps = "Identify the identity and device used for this activity and confirm this is not a security test. If you can rule out a security test initiate the  incident response process to decide if the attacker can be evicted or should be observed"
 suppressionDuration: 5h
@@ -28,7 +28,7 @@ entityMappings:
 - entityType: IP
   fieldMappings:
   - identifier: Address
-    columnName: IpAddress
+    columnName: IPAddress
 incidentConfiguration:
   createIncident: true
   groupingConfiguration:

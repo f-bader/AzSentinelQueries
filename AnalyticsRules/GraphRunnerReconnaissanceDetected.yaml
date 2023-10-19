@@ -6,7 +6,7 @@ description: |-
   Microsoft Graph queries that are similar to GraphRunner where detected in your environment. An attacker might have started with the reconnaissance stage of an attack in your environment. This requires access to a compromised identity.
 
   https://github.com/dafthack/GraphRunner
-  https://github.com/dafthack/GraphRunner/wiki
+  https://www.blackhillsinfosec.com/introducing-graphrunner/
 severity: Medium
 queryFrequency: 30m
 queryPeriod: 40m

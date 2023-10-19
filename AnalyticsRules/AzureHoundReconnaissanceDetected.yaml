@@ -49,7 +49,7 @@ query: |-
       | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'\?.*$', @'')
       | summarize
           GraphEndpointsCalled = make_set(NormalizedRequestUri, 1000),
-          IPAddresses = make_set(IpAddress)
+          IPAddresses = make_set(IPAddress)
           by ObjectId, ObjectType
       | project
           ObjectId,

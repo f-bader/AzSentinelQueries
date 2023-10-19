@@ -1,0 +1,97 @@
+id: c1d23904-a136-4794-b6fb-d5b3fc98e2d4
+name: GraphRunner reconnaissance detected
+version: 1.0.0
+kind: Scheduled
+description: |-
+  Microsoft Graph queries that are similar to GraphRunner where detected in your environment. An attacker might have started with the reconnaissance stage of an attack in your environment. This requires access to a compromised identity.
+
+  https://github.com/dafthack/GraphRunner
+  https://github.com/dafthack/GraphRunner/wiki
+severity: Medium
+queryFrequency: 30m
+queryPeriod: 40m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Reconnaissance
+  - InitialAccess
+relevantTechniques:
+  - T1595
+  - T1589
+  - T1591
+  - T1078
+query: |-
+  let GraphRunnerQueries = dynamic([
+      "https:/graph.microsoft.com/version/groups/<UUID>/members",
+      "https:/graph.microsoft.com/version/users/<UUID>",
+      "https:/graph.microsoft.com/version/users",
+      "https:/graph.microsoft.com/version/users/",
+      "https:/graph.microsoft.com/version/search/query",
+      "https:/graph.microsoft.com/version/servicePrincipals(appId='<UUID>')/appRoleAssignedTo",
+      "https:/graph.microsoft.com/version/servicePrincipals",
+      "https:/graph.microsoft.com/version/servicePrincipals/<UUID>",
+      "https:/graph.microsoft.com/version/organization",
+      "https:/graph.microsoft.com/version/groups",
+      "https:/graph.microsoft.com/version/applications",
+      "https:/graph.microsoft.com/version/policies/authorizationPolicy"
+      ]);
+  let PotentialMaliciousGraphCalls = materialize (
+      MicrosoftGraphActivityLogs
+      | where ingestion_time() > ago(35m)
+      | extend ObjectId = iff(isempty(UserId), ServicePrincipalId, UserId)
+      | extend ObjectType = iff(isempty(UserId), "ServicePrincipalId", "UserId")
+      | where RequestUri !has "microsoft.graph.delta"
+      | extend NormalizedRequestUri = replace_regex(RequestUri, @'[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}', @'<UUID>')
+      | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'\d+$', @'<UUID>')
+      | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'\/+', @'/')
+      | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'\/(v1\.0|beta)\/', @'/version/')
+      | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'%23EXT%23', @'')
+      | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'\/[a-zA-Z0-9+_.\-]+@[a-zA-Z0-9.]+\/', @'/<UUID>/')
+      | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'^\/<UUID>', @'')
+      | extend NormalizedRequestUri = replace_regex(NormalizedRequestUri, @'\?.*$', @'')
+      | summarize
+          GraphEndpointsCalled = make_set(NormalizedRequestUri, 1000),
+          IPAddresses = make_set(IPAddress)
+          by ObjectId, ObjectType
+      | project
+          ObjectId,
+          ObjectType,
+          IPAddresses,
+          MatchingQueries=set_intersect(GraphRunnerQueries, GraphEndpointsCalled)
+      | extend ConfidenceScore = round(todouble(array_length(MatchingQueries)) / todouble(array_length(GraphRunnerQueries)), 1)
+      | where ConfidenceScore > 0.7);
+  let IPEntities = PotentialMaliciousGraphCalls
+      | mv-expand IPAddresses
+      | sort by ObjectId
+      | extend CurrentRowNumber=row_number(2, prev(ObjectId) != ObjectId)
+      | extend IPInformation = bag_pack(@"$id", CurrentRowNumber, "Address", IPAddresses, "Type", "ip")
+      | project ObjectId, IPInformation
+      | summarize IPInformation = make_set(IPInformation, 150) by ObjectId;
+  PotentialMaliciousGraphCalls
+  | join kind=leftouter IPEntities on ObjectId
+  | project-away IPAddresses, *1, *2
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: false
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+alertDetailsOverride:
+  alertDynamicProperties:
+    - alertProperty: ConfidenceScore
+      value: ConfidenceScore
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: AadUserId
+        columnName: ObjectId
+sentinelEntitiesMappings:
+  - columnName: IPInformation
+suppressionDuration: 5h

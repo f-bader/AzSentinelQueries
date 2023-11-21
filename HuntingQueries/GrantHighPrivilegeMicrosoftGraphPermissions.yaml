@@ -27,7 +27,8 @@ query: |
   | where AddedPermission in~ ( DangerousPermissions )
   | extend IPCustomEntity = todynamic(InitiatedBy).user.ipAddress
   | extend ServicePrincipalAppId = replace_string(tostring(todynamic(TargetResources).modifiedProperties[5].newValue),'"','')
-  | project timestamp = TimeGenerated, IPCustomEntity, AccountCustomEntity=InitiatedByUserPrincipalName, ServicePrincipalAppId, AddedPermission
+  | extend ServicePrincipalDisplayName = replace_string(tostring(todynamic(TargetResources).modifiedProperties[6].newValue),'"','')
+  | project timestamp = TimeGenerated, IPCustomEntity, AccountCustomEntity=InitiatedByUserPrincipalName, ServicePrincipalAppId, ServicePrincipalDisplayName, AddedPermission
 entityMappings:
   - entityType: Account
     fieldMappings:
@@ -37,5 +38,5 @@ entityMappings:
     fieldMappings:
       - identifier: Address
         columnName: IPCustomEntity
-version: 1.0.0
+version: 1.0.1
 kind: Scheduled

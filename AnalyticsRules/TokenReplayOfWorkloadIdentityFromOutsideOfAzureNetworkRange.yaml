@@ -1,0 +1,130 @@
+id: 4dfcab48-c8c4-4c1d-acd5-07b400c80380
+name: Token Replay of workload identity from outside of Azure Network range
+version: 1.0.0
+kind: Scheduled
+description: |
+  Detected indicator of token replay attack by using the following pattern.
+
+  1. A workload identity is used to access Azure resources.
+  2. The workload identity is used from an IP address that is not in Azure IP ranges.
+severity: High
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Persistence
+  - PrivilegeEscalation
+relevantTechniques:
+  - T1078
+query: |
+  // Requires PrivilegedWorkloadIdentityInfo function and watchlist WorkloadIdentityInfo. See Thomas Naunheim blog for more details.
+  // https://www.cloud-architekt.net/entra-workload-id-advanced-detection-enrichment/#publish-watchlist-workloadidentityinfo-with-sentinelenrichment
+  // https://github.com/Cloud-Architekt/AzureSentinel/blob/main/Functions/PrivilegedWorkloadIdentityInfo.yaml
+  let AzureRanges = externaldata(changeNumber: string, cloud: string, values: dynamic)
+      ["https://raw.githubusercontent.com/microsoft/mstic/master/PublicFeeds/MSFTIPRanges/ServiceTags_Public.json"] with(format='multijson')
+      | mv-expand values
+      | mv-expand values.properties.addressPrefixes
+      | mv-expand values_properties_addressPrefixes
+      | summarize by tostring(values_properties_addressPrefixes)
+      | extend isipv4 = parse_ipv4(values_properties_addressPrefixes)
+      | extend isipv6 = parse_ipv6(values_properties_addressPrefixes)
+      | extend AddressFamily = case(isnotnull(isipv4), "v4", "v6")
+      | summarize IPRange=make_set(values_properties_addressPrefixes) by AddressFamily;
+  let AzureRangesIPv4 = toscalar(AzureRanges
+      | where AddressFamily == "v4"
+      | project IPRange);
+  let AzureRangesIPv6 = toscalar(AzureRanges
+      | where AddressFamily == "v6"
+      | project IPRange);
+  AzureActivity
+  | where parse_json(tostring(Authorization_d.evidence)).principalType == "ServicePrincipal"
+  | extend ClaimsObjectIdentifier = parse_json(Claims).["http://schemas.microsoft.com/identity/claims/objectidentifier"] 
+  | extend parsedClaims = parse_json(Claims_d)
+  | where ActivityStatusValue == "Success" and ActivitySubstatusValue == "OK"
+  | project
+      TimeGenerated,
+      CorrelationId,
+      OperationName,
+      ResourceProviderValue,
+      _ResourceId,
+      ActivityIpAddress = CallerIpAddress,
+      ApplicationId = tostring(parsedClaims.appid),
+      Uti = tostring(parsedClaims.uti),
+      ActivityStatus
+  | join kind=inner (AADManagedIdentitySignInLogs
+      | project
+          ConditionalAccessPolicies,
+          ConditionalAccessStatus,
+          ServicePrincipalCredentialKeyId,
+          UniqueTokenIdentifier
+      )
+      on $left.Uti == $right.UniqueTokenIdentifier
+  | extend IsInAzurev4Range = ipv4_is_in_any_range(ActivityIpAddress, AzureRangesIPv4)
+  | extend IsInAzurev6Range = ipv6_is_in_any_range(ActivityIpAddress, AzureRangesIPv6)
+  | extend IpAddressType = iff(IsInAzurev4Range or IsInAzurev6Range, "Azure Public IP", "None Azure IP")
+  | where IpAddressType == "None Azure IP"
+  | where isnotempty(ApplicationId)
+  | join kind=leftouter(
+      PrivilegedWorkloadIdentityInfo
+      | project
+          WorkloadIdentityName,
+          WorkloadIdentityType,
+          ApplicationObjectId,
+          ServicePrincipalObjectId,
+          ApplicationId,
+          IsFirstPartyApp,
+          EntraIdRoles,
+          AppRolePermissions,
+          WorkloadIdClassification = EnterpriseAccessModelTiering
+      )
+      on ApplicationId
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 1d
+    matchingMethod: Selected
+    groupByEntities:
+      - CloudApplication
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+customDetails:
+  WorkloadIdentityName: WorkloadIdentityName
+  WorkloadIdentityType: WorkloadIdentityType
+  ServicePrincipalId: ServicePrincipalObjectId
+  ApplicationId: ApplicationId
+  CredentialKeyId: ServicePrincipalCredentialKeyId
+  IsFirstPartyApp: IsFirstPartyApp
+  PrivilegedAccess: WorkloadIdClassification
+  EntraDirectoryRoles: EntraIdRoles
+  MSGraphRoles: AppRolePermissions
+  ConditionalAccess: ConditionalAccessStatus
+entityMappings:
+  - entityType: CloudApplication
+    fieldMappings:
+      - identifier: Name
+        columnName: WorkloadIdentityName
+  - entityType: CloudApplication
+    fieldMappings:
+      - identifier: AppId
+        columnName: ApplicationId
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: ActivityIpAddress
+  - entityType: AzureResource
+    fieldMappings:
+      - identifier: ResourceId
+        columnName: _ResourceId
+  - entityType: Account
+    fieldMappings:
+      - identifier: AadUserId
+        columnName: ServicePrincipalObjectId
+      - identifier: Name
+        columnName: ServicePrincipalObjectId
+suppressionDuration: 5h

@@ -1,6 +1,6 @@
 id: 4dfcab48-c8c4-4c1d-acd5-07b400c80380
 name: Token Replay of workload identity from outside of Azure Network range
-version: 1.0.0
+version: 1.0.1
 kind: Scheduled
 description: |
   Detected indicator of token replay attack by using the following pattern.
@@ -9,7 +9,7 @@ description: |
   2. The workload identity is used from an IP address that is not in Azure IP ranges.
 severity: High
 queryFrequency: 1h
-queryPeriod: 1h
+queryPeriod: 1d
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
@@ -18,9 +18,6 @@ tactics:
 relevantTechniques:
   - T1078
 query: |
-  // Requires PrivilegedWorkloadIdentityInfo function and watchlist WorkloadIdentityInfo. See Thomas Naunheim blog for more details.
-  // https://www.cloud-architekt.net/entra-workload-id-advanced-detection-enrichment/#publish-watchlist-workloadidentityinfo-with-sentinelenrichment
-  // https://github.com/Cloud-Architekt/AzureSentinel/blob/main/Functions/PrivilegedWorkloadIdentityInfo.yaml
   let AzureRanges = externaldata(changeNumber: string, cloud: string, values: dynamic)
       ["https://raw.githubusercontent.com/microsoft/mstic/master/PublicFeeds/MSFTIPRanges/ServiceTags_Public.json"] with(format='multijson')
       | mv-expand values
@@ -38,35 +35,15 @@ query: |
       | where AddressFamily == "v6"
       | project IPRange);
   AzureActivity
+  | where ingestion_time() > ago(1h)
   | where parse_json(tostring(Authorization_d.evidence)).principalType == "ServicePrincipal"
   | extend ClaimsObjectIdentifier = parse_json(Claims).["http://schemas.microsoft.com/identity/claims/objectidentifier"] 
   | extend parsedClaims = parse_json(Claims_d)
   | where ActivityStatusValue == "Success" and ActivitySubstatusValue == "OK"
-  | project
-      TimeGenerated,
-      CorrelationId,
-      OperationName,
-      ResourceProviderValue,
-      _ResourceId,
-      ActivityIpAddress = CallerIpAddress,
-      ApplicationId = tostring(parsedClaims.appid),
-      Uti = tostring(parsedClaims.uti),
-      ActivityStatus
-  | join kind=inner (AADManagedIdentitySignInLogs
-      | project
-          ConditionalAccessPolicies,
-          ConditionalAccessStatus,
-          ServicePrincipalCredentialKeyId,
-          UniqueTokenIdentifier
-      )
-      on $left.Uti == $right.UniqueTokenIdentifier
-  | extend IsInAzurev4Range = ipv4_is_in_any_range(ActivityIpAddress, AzureRangesIPv4)
-  | extend IsInAzurev6Range = ipv6_is_in_any_range(ActivityIpAddress, AzureRangesIPv6)
-  | extend IpAddressType = iff(IsInAzurev4Range or IsInAzurev6Range, "Azure Public IP", "None Azure IP")
-  | where IpAddressType == "None Azure IP"
-  | where isnotempty(ApplicationId)
-  | join kind=leftouter(
+  // Join with PrivilegedWorkloadIdentityInfo table to get the WorkloadIdentityName but only for ManagedIdentity
+  | join kind=inner (
       PrivilegedWorkloadIdentityInfo
+      | where WorkloadIdentityType == "ManagedIdentity"
       | project
           WorkloadIdentityName,
           WorkloadIdentityType,
@@ -78,7 +55,25 @@ query: |
           AppRolePermissions,
           WorkloadIdClassification = EnterpriseAccessModelTiering
       )
-      on ApplicationId
+      on $left.Caller == $right.ServicePrincipalObjectId
+  // Use unique token identifier to join with AADManagedIdentitySignInLogs table
+  | extend ActivityIpAddress = CallerIpAddress, Uti = tostring(parsedClaims.uti)
+  | join kind=inner (AADManagedIdentitySignInLogs
+      | where ingestion_time() > ago(1d)
+      | project
+          ConditionalAccessPolicies,
+          ConditionalAccessStatus,
+          ServicePrincipalCredentialKeyId,
+          UniqueTokenIdentifier
+      )
+      on $left.Uti == $right.UniqueTokenIdentifier
+  // Check if the IP address is in Azure IP ranges or not
+  | extend IsInAzurev4Range = ipv4_is_in_any_range(ActivityIpAddress, AzureRangesIPv4)
+  | extend IsInAzurev6Range = ipv6_is_in_any_range(ActivityIpAddress, AzureRangesIPv6)
+  | extend IpAddressType = iff(IsInAzurev4Range or IsInAzurev6Range, "Azure Public IP", "None Azure IP")
+  // Filter out valid Azure IP ranges
+  | where IpAddressType == "None Azure IP"
+  | project TimeGenerated,OperationNameValue,ResourceGroup,SubscriptionId,_ResourceId,CallerIpAddress,WorkloadIdentityName,WorkloadIdentityType,ServicePrincipalObjectId,ApplicationId,IsFirstPartyApp,EntraIdRoles,AppRolePermissions,WorkloadIdClassification,ActivityIpAddress,Uti,ConditionalAccessPolicies,ConditionalAccessStatus,UniqueTokenIdentifier,IpAddressType,CorrelationId,Caller,Category,EventSubmissionTimestamp,Authorization,ResourceProviderValue
 suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
@@ -98,7 +93,6 @@ customDetails:
   WorkloadIdentityType: WorkloadIdentityType
   ServicePrincipalId: ServicePrincipalObjectId
   ApplicationId: ApplicationId
-  CredentialKeyId: ServicePrincipalCredentialKeyId
   IsFirstPartyApp: IsFirstPartyApp
   PrivilegedAccess: WorkloadIdClassification
   EntraDirectoryRoles: EntraIdRoles

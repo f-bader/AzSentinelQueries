@@ -23,6 +23,7 @@ jobs:
               $AddressFamily = [IPAddress]($IPRange.IPRange -replace '/.*') | Select-Object -ExpandProperty AddressFamily 
               $IPRange | Add-Member -MemberType NoteProperty -Name AddressFamily -Value $AddressFamily 
           }
+          if (-not (Test-Path -Path "${{ github.workspace }}/ExternalData/")) { New-Item -ItemType Directory -Path "${{ github.workspace }}/ExternalData/" -ErrorAction SilentlyContinue }
           $IPRanges | Export-Csv -Path ${{ github.workspace }}/ExternalData/iCloudPrivateRelayIPRanges.csv -Force
 
       - name: Commit updated data to repo

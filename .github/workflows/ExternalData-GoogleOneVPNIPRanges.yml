@@ -27,7 +27,7 @@ jobs:
             }
           }
           if (-not (Test-Path -Path "${{ github.workspace }}/ExternalData/")) { New-Item -ItemType Directory -Path "${{ github.workspace }}/ExternalData/" -ErrorAction SilentlyContinue }
-          $IPRanges | Export-Csv -Path ${{ github.workspace } }/ExternalData/GoogleOneVPNIPRanges.csv -Force
+          $IPRanges | Export-Csv -Path ${{ github.workspace }}/ExternalData/GoogleOneVPNIPRanges.csv -Force
 
       - name: Commit updated data to repo
         uses: stefanzweifel/git-auto-commit-action@v5

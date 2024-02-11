@@ -1,4 +1,4 @@
-name: Pull external data source iCloud Private Relay
+name: Pull external data source Google One VPN IP Ranges
 
 on:
   workflow_dispatch:

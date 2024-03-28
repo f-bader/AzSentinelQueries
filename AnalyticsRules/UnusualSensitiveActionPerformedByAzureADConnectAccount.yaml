@@ -21,7 +21,17 @@ relevantTechniques:
   - T1078
   - T0890
 query: |-
-  let SensitiveActions = dynamic(["Update service principal","Add service principal credentials","Add owner to service principal","Add delegated permission grant"]);
+  let SensitiveActions = dynamic([
+    "Add conditional access policy",
+    "Update conditional access policy",
+    "Delete policy",
+    "Update service principal",
+    "Update application – Certificates and secrets management",
+    "Add service principal credentials",
+    "Add owner to service principal",
+    "Add owner to application",
+    "Add delegated permission grant"
+  ]);
   AuditLogs
   | extend InitiatedByUPN = parse_json(tostring(InitiatedBy.user)).userPrincipalName
   | where InitiatedByUPN startswith "Sync_" and InitiatedByUPN endswith "onmicrosoft.com"

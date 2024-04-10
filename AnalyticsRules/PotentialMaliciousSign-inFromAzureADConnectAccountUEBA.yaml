@@ -1,8 +1,8 @@
 id: a4fe163e-aec6-407c-8240-ef280742a5f4
-name: Potential malicious sign-in from Azure AD Connect account (UEBA)
-version: 1.0.1
+name: Potential malicious sign-in from Entra Connect account (UEBA)
+version: 1.0.2
 kind: Scheduled
-description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
+description: The Microsoft Entra Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
 severity: High
 queryFrequency: 1h
 queryPeriod: 14d

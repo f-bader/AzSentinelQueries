@@ -1,8 +1,8 @@
 id: c8fac852-f10c-4962-b0fb-11722e8c9bb8
-name: Potential malicious sign-in from Azure AD Connect account
-version: 1.0.0
+name: Potential malicious sign-in from Entra Connect account
+version: 1.0.1
 kind: Scheduled
-description: The Azure AD Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
+description: The Microsoft Entra Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
 severity: High
 queryFrequency: 30m
 queryPeriod: 30m

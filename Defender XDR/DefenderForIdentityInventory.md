@@ -8,7 +8,8 @@ This query lists all detected domain controllers and the installed Microsoft Def
 If there is no MDI agent installed the property `MDIInstalled` is set to false.
 
 #### Risk
-Explain what risk this detection tries to cover
+
+Without Defender for Identify coverage there are blindspots in the XDR coverage
 
 #### Author
 

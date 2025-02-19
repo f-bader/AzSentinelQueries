@@ -43,7 +43,7 @@ jobs:
 
             az deployment group create \
               --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-              --template-file arm-template.json \
+              --template-file templates/arm-template.json \
               --parameters workspaceName="${{ secrets.AZURE_WORKSPACE_NAME }}" \
                            ruleName="$rule_name" \
                            ruleData=@converted_rule.json

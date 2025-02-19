@@ -1,0 +1,52 @@
+name: Deploy Custom Sentinel Analytic Rules
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-custom-rules:
+    runs-on: ubuntu-latest
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: |
+            {
+              "clientId": "${{ env.ARM_CLIENT_ID }}",
+              "clientSecret": "${{ env.ARM_CLIENT_SECRET }}",
+              "subscriptionId": "${{ env.ARM_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ env.ARM_TENANT_ID }}"
+            }
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/bin/yq https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64
+          sudo chmod +x /usr/bin/yq
+
+      - name: Deploy each custom rule
+        run: |
+          for rule_file in $(find custom -type f -name '*.yaml'); do
+            echo "Deploying rule from file: $rule_file"
+            yq eval -o=json "$rule_file" > converted_rule.json
+
+            rule_name=$(basename "$rule_file" .yaml)
+            echo "Rule name: $rule_name"
+
+            az deployment group create \
+              --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+              --template-file arm-template.json \
+              --parameters workspaceName="${{ secrets.AZURE_WORKSPACE_NAME }}" \
+                           ruleName="$rule_name" \
+                           ruleData=@converted_rule.json
+          done
+

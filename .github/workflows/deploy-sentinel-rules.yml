@@ -1,8 +1,9 @@
 name: Deploy Custom Sentinel Analytic Rules
 
 on:
-  pull_request:
-    branches: [ "*" ]
+  push:
+    branches:
+      - main
 
 jobs:
   deploy-custom-rules:
@@ -32,22 +33,32 @@ jobs:
           sudo wget -qO /usr/bin/yq https://github.com/mikefarah/yq/releases/download/v4.35.1/yq_linux_amd64
           sudo chmod +x /usr/bin/yq
 
+      - name: Install jq
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+
       - name: Deploy each custom rule
         run: |
           for rule_file in $(find custom -type f -name '*.yaml'); do
             echo "Deploying rule from file: $rule_file"
-            yq eval -o=json "$rule_file" > converted_rule.json
+            # Convert YAML to JSON
+            yq eval -o=json "$rule_file" > temp_rule.json
+
+            # Transform queryFrequency and queryPeriod from "30m" to ISO 8601 format "PT30M"
+            jq 'if has("queryFrequency") then 
+                   .queryFrequency |= (if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M" else . end) 
+                 else . end |
+                 if has("queryPeriod") then 
+                   .queryPeriod |= (if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M" else . end) 
+                 else . end' temp_rule.json > converted_rule.json
 
             rule_name=$(basename "$rule_file" .yaml)
             echo "Rule name: $rule_name"
 
             az deployment group create \
               --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-              --template-file templates/arm-template.json \
+              --template-file arm-template.json \
               --parameters workspace="${{ secrets.AZURE_WORKSPACE_NAME }}" \
                            ruleName="$rule_name" \
                            ruleData=@converted_rule.json
           done
-
-
-

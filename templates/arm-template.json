@@ -14,7 +14,7 @@
   },
   "resources": [
     {
-      "type": "Microsoft.OperationalInsights/workspaces/providers/Microsoft.SecurityInsights/alertRules",
+      "type": "Microsoft.SecurityInsights/alertRules",
       "apiVersion": "2021-03-01-preview",
       "name": "[concat(parameters('workspaceName'), '/Microsoft.SecurityInsights/alertRules/', parameters('ruleName'))]",
       "properties": "[parameters('ruleData')]"

@@ -1,0 +1,43 @@
+id: 54b355e7-1736-425e-8627-4972161b135a
+name: AzureHound activity detected
+version: 1.0.0
+kind: NRT
+description: Microsoft Graph queries sent to the tenant contained the User Agent string of AzureHound. This is a high fedility indicator that someone scans your Azure AD tenant for additional information and might be part of the inital phase of an attack.
+severity: Medium
+query: |-
+  MicrosoftGraphActivityLogs
+  | where UserAgent has "azurehound"
+  | summarize QueriesSent=count() by UserId, IPAddress, ServicePrincipalId, AppId, TokenIssuedAt, Location, SignInActivityId, SourceSystem, AadTenantId, UserAgent
+  | extend ConfidenceScore = 1
+  | extend RemediationSteps = "Identify the identity and device used for this activity and confirm this is not a security test. If you can rule out a security test initiate the  incident response process to decide if the attacker can be evicted or should be observed"
+suppressionDuration: 5h
+suppressionEnabled: false
+eventGroupingSettings:
+  aggregationKind: SingleAlert
+alertDetailsOverride:
+  alertDynamicProperties:
+  - alertProperty: RemediationSteps
+    value: RemediationSteps
+  - alertProperty: ConfidenceScore
+    value: ConfidenceScore
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - identifier: AadUserId
+    columnName: UserId
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: Selected
+    groupByEntities:
+    - Account
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+

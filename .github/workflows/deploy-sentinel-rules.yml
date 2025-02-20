@@ -40,16 +40,17 @@ jobs:
         run: |
           for rule_file in $(find custom -type f -name '*.yaml'); do
             echo "Deploying rule from file: $rule_file"
-            # Convert YAML to JSON
             yq eval -o=json "$rule_file" > temp_rule.json
 
-            # Transform queryFrequency and queryPeriod from "30m" to ISO 8601 format "PT30M"
             jq 'if has("queryFrequency") then 
                    .queryFrequency |= (if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M" else . end) 
-                 else . end |
-                 if has("queryPeriod") then 
-                   .queryPeriod |= (if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M" else . end) 
-                 else . end' temp_rule.json > converted_rule.json
+                else . end |
+                if has("queryPeriod") then 
+                  .queryPeriod |= (if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M" else . end) 
+                else . end |
+                if has("triggerOperator") then 
+                  .triggerOperator |= (if . == "gt" then "GreaterThan" else . end)
+                else . end' temp_rule.json > converted_rule.json
 
             rule_name=$(basename "$rule_file" .yaml)
             echo "Rule name: $rule_name"

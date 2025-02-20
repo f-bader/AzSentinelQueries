@@ -64,7 +64,12 @@ jobs:
                    .triggerOperator |= (if . == "gt" then "GreaterThan" else . end)
                  else . end |
                  if (.incidentConfiguration | has("groupingConfiguration")) then
-                   .incidentConfiguration.groupingConfiguration.lookbackDuration |= (if test("^[0-9]+h$") then "PT" + (. | capture("^(?<hours>[0-9]+)h").hours) + "H" else . end)
+                   .incidentConfiguration.groupingConfiguration.lookbackDuration |= (
+                     if test("^[0-9]+h$") then "PT" + (. | capture("^(?<hours>[0-9]+)h").hours) + "H"
+                     elif test("^[0-9]+d$") then "P" + (. | capture("^(?<days>[0-9]+)d").days) + "D"
+                     else .
+                     end
+                   )
                  else . end |
                  if has("suppressionDuration") then
                    .suppressionDuration |= (if test("^[0-9]+h$") then "PT" + (. | capture("^(?<hours>[0-9]+)h").hours) + "H" else . end)

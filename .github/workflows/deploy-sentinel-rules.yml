@@ -49,3 +49,5 @@ jobs:
                            ruleData=@converted_rule.json
           done
 
+
+

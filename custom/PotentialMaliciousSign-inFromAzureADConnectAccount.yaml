@@ -1,0 +1,51 @@
+id: c8fac852-f10c-4962-b0fb-11722e8c9bb8
+name: Potential malicious sign-in from Entra Connect account
+version: 1.0.1
+kind: Scheduled
+description: The Microsoft Entra Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
+severity: High
+queryFrequency: 30m
+queryPeriod: 30m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - LateralMovement
+relevantTechniques:
+  - T0859
+query: "union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs\r\n| where UserPrincipalName startswith \"Sync_\" and UserPrincipalName endswith \"onmicrosoft.com\"\r\n// Only alert when AppId != Microsoft Azure Active Directory Connect and the ressource is not AAD \r\n| where AppId != \"cb1056e2-e479-49de-ae31-7812af012ed8\" and ResourceDisplayName != \"Windows Azure Active Directory\""
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    matchingMethod: Selected
+    reopenClosedIncident: false
+    groupByCustomDetails: []
+    groupByEntities:
+      - Account
+    groupByAlertDetails: []
+    lookbackDuration: 1h
+    enabled: true
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+entityMappings:
+  - entityType: CloudApplication
+    fieldMappings:
+      - columnName: AppId
+        identifier: AppId
+  - entityType: CloudApplication
+    fieldMappings:
+      - columnName: AppDisplayName
+        identifier: Name
+  - entityType: IP
+    fieldMappings:
+      - columnName: IPAddress
+        identifier: Address
+  - entityType: Account
+    fieldMappings:
+      - columnName: UserPrincipalName
+        identifier: FullName
+  - entityType: Account
+    fieldMappings:
+      - columnName: UserId
+        identifier: AadUserId
+suppressionEnabled: false

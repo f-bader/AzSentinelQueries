@@ -1,0 +1,55 @@
+id: 91302a05-c2ca-414d-8341-c82658ea3c1f
+name: Potential malicous domain registration
+version: 1.0.0
+kind: Scheduled
+description: This rule checks the custom log RegisteredDomains and alerts when new entries are added. The custom log is created using a logic app, checking for newly created domains that contain a certain keyword
+severity: Low
+queryFrequency: 1d
+queryPeriod: 1d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - ResourceDevelopment
+relevantTechniques:
+  - T1583
+query: |
+  RegisteredDomains_CL
+  | where QueryType_s == "domainsearch"
+  | summarize arg_max(TimeGenerated,*) by DomainName_s
+  | project TimeGenerated, DomainName=DomainName_s, IsActive=Active_s, SearchTerm=SearchTerm_s
+  | extend DetonateHTTPUrl = strcat("http://",DomainName)
+  | extend DetonateHTTPSUrl = strcat("https://",DomainName)
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    matchingMethod: AllEntities
+    reopenClosedIncident: false
+    groupByCustomDetails: []
+    groupByEntities: []
+    groupByAlertDetails: []
+    lookbackDuration: 5h
+    enabled: false
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+alertDetailsOverride:
+  alertDynamicProperties: []
+  alertDisplaynameFormat: "New domain registered: {{DomainName}}"
+  alertDescriptionFormat: "A new domain was registered that contains the keyword \"{{SearchTerm}}\"\n\nThis could be a first step in setting up malicious infrastructure for e.g. phishing or email fraud attempts.\n\nCheck if this domain was registered by your company, otherwise block this URL for incoming emails and add it as custom block indicator for Microsoft Defender for Endpoint and Microsoft Sentinel "
+customDetails:
+  DomainIsActive: IsActive
+  SearchTerm: SearchTerm
+entityMappings:
+  - entityType: URL
+    fieldMappings:
+      - columnName: DetonateHTTPSUrl
+        identifier: Url
+  - entityType: URL
+    fieldMappings:
+      - columnName: DetonateHTTPUrl
+        identifier: Url
+  - entityType: DNS
+    fieldMappings:
+      - columnName: DomainName
+        identifier: DomainName
+suppressionEnabled: false

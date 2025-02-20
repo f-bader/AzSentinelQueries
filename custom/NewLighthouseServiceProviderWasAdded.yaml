@@ -1,0 +1,43 @@
+id: 0193072c-afc9-4fd1-ac9a-c4add164e40d
+name: A new Lighthouse service provider was added
+version: 1.0.0
+kind: Scheduled
+description: A service provider was added using Lighthouse
+severity: Informational
+queryFrequency: 30m
+queryPeriod: 30m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Persistence
+query: |-
+  AzureActivity
+  | where OperationNameValue =~ "Microsoft.ManagedServices/registrationAssignments/Write"
+  | extend timestamp = TimeGenerated, AccountCustomEntity = Caller, IPCustomEntity = CallerIpAddress
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: false
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: SingleAlert
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: AccountCustomEntity
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPCustomEntity
+  - entityType: AzureResource
+    fieldMappings:
+      - identifier: ResourceId
+        columnName: SubscriptionId
+suppressionDuration: 5h

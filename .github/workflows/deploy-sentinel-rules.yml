@@ -53,6 +53,9 @@ jobs:
                  else . end |
                  if (.incidentConfiguration | has("groupingConfiguration")) then
                    .incidentConfiguration.groupingConfiguration.lookbackDuration |= (if test("^[0-9]+h$") then "PT" + (. | capture("^(?<hours>[0-9]+)h").hours) + "H" else . end)
+                 else . end |
+                 if has("suppressionDuration") then
+                   .suppressionDuration |= (if test("^[0-9]+h$") then "PT" + (. | capture("^(?<hours>[0-9]+)h").hours) + "H" else . end)
                  else . end' temp_rule.json > converted_rule.json
 
             rule_name=$(basename "$rule_file" .yaml)
@@ -65,4 +68,3 @@ jobs:
                            ruleName="$rule_name" \
                            ruleData=@converted_rule.json
           done
-

@@ -71,6 +71,9 @@ jobs:
                  else . end |
                  if (has("displayName") | not) then
                    .displayName = .name
+                 else . end |
+                 if (has("enabled") | not) then
+                   .enabled = true
                  else . end' temp_rule.json > converted_rule.json
 
             rule_name=$(basename "$rule_file" .yaml)

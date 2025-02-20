@@ -43,10 +43,22 @@ jobs:
             yq eval -o=json "$rule_file" > temp_rule.json
 
             jq 'if has("queryFrequency") then
-                   .queryFrequency |= (if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M" else . end)
+                   .queryFrequency |= (
+                     if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M"
+                     elif test("^[0-9]+h$") then "PT" + (. | capture("^(?<hours>[0-9]+)h").hours) + "H"
+                     elif test("^[0-9]+d$") then "P" + (. | capture("^(?<days>[0-9]+)d").days) + "D"
+                     else .
+                     end
+                   )
                  else . end |
                  if has("queryPeriod") then
-                   .queryPeriod |= (if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M" else . end)
+                   .queryPeriod |= (
+                     if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M"
+                     elif test("^[0-9]+h$") then "PT" + (. | capture("^(?<hours>[0-9]+)h").hours) + "H"
+                     elif test("^[0-9]+d$") then "P" + (. | capture("^(?<days>[0-9]+)d").days) + "D"
+                     else .
+                     end
+                   )
                  else . end |
                  if has("triggerOperator") then
                    .triggerOperator |= (if . == "gt" then "GreaterThan" else . end)
@@ -68,3 +80,4 @@ jobs:
                            ruleName="$rule_name" \
                            ruleData=@converted_rule.json
           done
+

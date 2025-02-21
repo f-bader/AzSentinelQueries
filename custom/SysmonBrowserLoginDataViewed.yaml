@@ -11,7 +11,7 @@ triggerThreshold: 0
 tactics:
   - CredentialAccess
 query: |-
-  SysmonEvent
+  Event
   | where EventID == 1
   | where CommandLine matches regex '(?i)C:\\Users\\.*\\AppData\\(Roaming|Local)\\.*(firefox|mozilla|edge|ie|chrome|google|opera|internetexplorer|outlook).*\\.*(udetails|Login|signin|logon|credential|password).*'
 suppressionEnabled: false

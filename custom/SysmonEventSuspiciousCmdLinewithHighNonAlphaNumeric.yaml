@@ -1,6 +1,6 @@
 id: e9f741a9-8ad4-4e68-83ac-9b2f3b5d12ef
 name: Command Line with High Amount of ASCII Non-Alphanumeric Characters
-version: 1.0.4
+version: 1.0.5
 kind: Scheduled
 description: Detects suspicious command line activity with a high number of ASCII non-alphanumeric characters, potentially indicative of USB worm activity and behavior associated with Gamarue.
 severity: High
@@ -17,7 +17,7 @@ query: |-
   // References (if available):  p23  https://resource.redcanary.com/rs/003-YRU-314/images/2021-Threat-Detection-Report.pdf
   // The Logic of the Detection or Query Begins Below This Line
   Event
-  | extend details = parse_json(EventDetails)
+  | extend details = parse_json(tostring(column_ifexists(EventDetails, '')))
   | extend CommandLine = tostring(details.CommandLine)
   | where CommandLine matches regex @"(?i)[-_#~<>]"
   | extend minus = countof(CommandLine, "-")

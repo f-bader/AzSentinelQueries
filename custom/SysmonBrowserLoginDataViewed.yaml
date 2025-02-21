@@ -25,7 +25,7 @@ query: |-
   | parse RuleName with * "technique_id=" TechniqueId "," * "technique_name=" TechniqueName
   | parse Hashes with * "SHA1=" SHA1 "," * "MD5=" MD5 "," * "SHA256=" SHA256 "," * "IMPHASH=" IMPHASH 
   | where EventID == 1
-  | where CommandLine matches regex '(?i)C:\\Users\\.*\\AppData\\(Roaming|Local)\\.*(firefox|mozilla|edge|ie|chrome|google|opera|internetexplorer|outlook).*\\.*(udetails|Login|signin|logon|credential|password).*'
+  | where CommandLine matches regex '(?i)C:\\\\Users\\\\.*\\\\AppData\\\\(Roaming|Local)\\\\.*(firefox|mozilla|edge|ie|chrome|google|opera|internetexplorer|outlook).*\\\\.*(udetails|Login|signin|logon|credential|password).*'
 suppressionEnabled: false
 incidentConfiguration:
   createIncident: true

@@ -1,6 +1,6 @@
 id: e9f741a9-8ad4-4e68-83ac-9b2f3b5d12ef
 name: Command Line with High Amount of ASCII Non-Alphanumeric Characters
-version: 1.0.0
+version: 1.0.1
 kind: Scheduled
 description: Detects suspicious command line activity with a high number of ASCII non-alphanumeric characters, potentially indicative of USB worm activity and behavior associated with Gamarue.
 severity: High
@@ -16,16 +16,16 @@ query: |-
   // Description of the Detection:  a decent amount of USB worm activity wherein an exe executes in conjunction with a command line containing non-alphanumeric or otherwise unusual command-line. fp is legit admin activity characters. seen with Gamarue
   // References (if available):  p23  https://resource.redcanary.com/rs/003-YRU-314/images/2021-Threat-Detection-Report.pdf
   // The Logic of the Detection or Query Begins Below This Line
-  Event
-  | where CommandLine matches regex @"(?i)[-_#~<>]"
-  | extend minus = countof(tostring(CommandLine), "-")
-  | extend underscore = countof(tostring(CommandLine), "_")
-  | extend hash = countof(tostring(CommandLine), "#")
-  | extend tilde = countof(tostring(CommandLine), "~") 
-  | extend lessinequality = countof(tostring(CommandLine), "<")
-  | extend moreinequality = countof(tostring(CommandLine), ">")
+  SysmonEvent
+  | where ProcessCommandLine matches regex @"(?i)[-_#~<>]"
+  | extend minus = countof(tostring(ProcessCommandLine), "-")
+  | extend underscore = countof(tostring(ProcessCommandLine), "_")
+  | extend hash = countof(tostring(ProcessCommandLine), "#")
+  | extend tilde = countof(tostring(ProcessCommandLine), "~")
+  | extend lessinequality = countof(tostring(ProcessCommandLine), "<")
+  | extend moreinequality = countof(tostring(ProcessCommandLine), ">")
   | extend Total = minus + underscore + hash + tilde + lessinequality + moreinequality 
-  | project-reorder TimeGenerated, Computer, UserName, EventID, Image, CommandLine, minus, underscore, hash, tilde, lessinequality, moreinequality, Total 
+  | project-reorder TimeGenerated, Computer, UserName, EventID, Image, ProcessCommandLine, minus, underscore, hash, tilde, lessinequality, moreinequality, Total 
   | sort by Total desc
   | where Total >= 10
 suppressionEnabled: false
@@ -42,7 +42,7 @@ incidentConfiguration:
 eventGroupingSettings:
   aggregationKind: AlertPerResult
 customDetails:
-  CommandLine: CommandLine
+  ProcessCommandLine: ProcessCommandLine
   TotalSpecialChars: Total
   ProcessImage: Image
 entityMappings:
@@ -55,3 +55,4 @@ entityMappings:
       - columnName: Computer
         identifier: HostName
 suppressionDuration: 5h
+

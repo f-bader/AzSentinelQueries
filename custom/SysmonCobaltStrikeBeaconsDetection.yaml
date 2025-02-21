@@ -25,7 +25,7 @@ query: |-
   | parse RuleName with * "technique_id=" TechniqueId "," * "technique_name=" TechniqueName
   | parse Hashes with * "SHA1=" SHA1 "," * "MD5=" MD5 "," * "SHA256=" SHA256 "," * "IMPHASH=" IMPHASH 
   | where EventID == 1
-  | where CommandLine matches regex '(?i)(.*(IO\.MemoryStream|FromBase64String|New-Object).*){3,}'
+  | where CommandLine matches regex '(?i)(.*(IO\\.MemoryStream|FromBase64String|New-Object).*){3,}'
 suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
@@ -51,4 +51,3 @@ entityMappings:
       - columnName: Computer
         identifier: HostName
 suppressionDuration: 5h
-

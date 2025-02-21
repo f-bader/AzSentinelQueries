@@ -5,7 +5,7 @@ kind: Scheduled
 description: A user has either initiated a Azure VM Run Command or Custom Script execution
 severity: Medium
 queryFrequency: 30m
-queryPeriod: 35m
+queryPeriod: 34m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:

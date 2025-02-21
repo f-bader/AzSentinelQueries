@@ -1,6 +1,6 @@
 id: e9f741a9-8ad4-4e68-83ac-9b2f3b5d12ef
 name: Command Line with High Amount of ASCII Non-Alphanumeric Characters
-version: 1.0.2
+version: 1.0.4
 kind: Scheduled
 description: Detects suspicious command line activity with a high number of ASCII non-alphanumeric characters, potentially indicative of USB worm activity and behavior associated with Gamarue.
 severity: High
@@ -17,16 +17,17 @@ query: |-
   // References (if available):  p23  https://resource.redcanary.com/rs/003-YRU-314/images/2021-Threat-Detection-Report.pdf
   // The Logic of the Detection or Query Begins Below This Line
   Event
-  | extend ProcessCommandLine = tostring(EventDetails.ProcessCommandLine)
-  | where ProcessCommandLine matches regex @"(?i)[-_#~<>]"
-  | extend minus = countof(ProcessCommandLine, "-")
-  | extend underscore = countof(ProcessCommandLine, "_")
-  | extend hash = countof(ProcessCommandLine, "#")
-  | extend tilde = countof(ProcessCommandLine, "~")
-  | extend lessinequality = countof(ProcessCommandLine, "<")
-  | extend moreinequality = countof(ProcessCommandLine, ">")
+  | extend details = parse_json(EventDetails)
+  | extend CommandLine = tostring(details.CommandLine)
+  | where CommandLine matches regex @"(?i)[-_#~<>]"
+  | extend minus = countof(CommandLine, "-")
+  | extend underscore = countof(CommandLine, "_")
+  | extend hash = countof(CommandLine, "#")
+  | extend tilde = countof(CommandLine, "~")
+  | extend lessinequality = countof(CommandLine, "<")
+  | extend moreinequality = countof(CommandLine, ">")
   | extend Total = minus + underscore + hash + tilde + lessinequality + moreinequality
-  | project-reorder TimeGenerated, Computer, UserName, EventID, Image, ProcessCommandLine, minus, underscore, hash, tilde, lessinequality, moreinequality, Total
+  | project-reorder TimeGenerated, Computer, UserName, EventID, Image, CommandLine, minus, underscore, hash, tilde, lessinequality, moreinequality, Total
   | sort by Total desc
   | where Total >= 10
 suppressionEnabled: false
@@ -43,7 +44,7 @@ incidentConfiguration:
 eventGroupingSettings:
   aggregationKind: AlertPerResult
 customDetails:
-  ProcessCommandLine: ProcessCommandLine
+  CommandLine: CommandLine
   TotalSpecialChars: Total
   ProcessImage: Image
 entityMappings:
@@ -56,3 +57,4 @@ entityMappings:
       - columnName: Computer
         identifier: HostName
 suppressionDuration: 5h
+

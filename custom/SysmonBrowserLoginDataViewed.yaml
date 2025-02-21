@@ -1,0 +1,42 @@
+id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+name: Browser Login Data Viewed
+version: 1.0.0
+kind: Scheduled
+description: Detects when browser login data files are accessed, potentially indicating adversary attempts to retrieve stored browser credentials.
+severity: High
+queryFrequency: 30m
+queryPeriod: 30m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - CredentialAccess
+query: |-
+  SysmonEvent
+  | where EventID == 1
+  | where CommandLine matches regex '(?i)C:\\Users\\.*\\AppData\\(Roaming|Local)\\.*(firefox|mozilla|edge|ie|chrome|google|opera|internetexplorer|outlook).*\\.*(udetails|Login|signin|logon|credential|password).*'
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    matchingMethod: AllEntities
+    reopenClosedIncident: false
+    groupByCustomDetails: []
+    groupByEntities: []
+    groupByAlertDetails: []
+    lookbackDuration: 5h
+    enabled: false
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+customDetails:
+  CommandLine: CommandLine
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - columnName: UserName
+        identifier: FullName
+  - entityType: Host
+    fieldMappings:
+      - columnName: Computer
+        identifier: HostName
+suppressionDuration: 5h
+

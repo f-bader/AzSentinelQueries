@@ -1069,7 +1069,7 @@ if __name__ == "__main__":
         if 'name' in rule_def:
             # Your rule uses 'name' for display name
             test_rule['displayName'] = f"TEST - {rule_def['name']}"
-        elif 'displayName' in rule_def:
+      [O  elif 'displayName' in rule_def:
             test_rule['displayName'] = f"TEST - {rule_def['displayName']}"
         else:
             test_rule['displayName'] = f"TEST - Generated Rule {int(time.time())}"

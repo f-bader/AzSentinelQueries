@@ -19,11 +19,14 @@ from azure.kusto.data import KustoClient, KustoConnectionStringBuilder
 from azure.kusto.data.exceptions import KustoServiceError
 from azure.kusto.ingest import QueuedIngestClient, IngestionProperties, FileDescriptor, BlobDescriptor
 
-# Environment configuration
-SUBSCRIPTION_ID = os.environ.get("AZURE_SUBSCRIPTION_ID")
-RESOURCE_GROUP = os.environ.get("RESOURCE_GROUP")
-WORKSPACE_NAME = os.environ.get("WORKSPACE_NAME")
-WORKSPACE_ID = os.environ.get("WORKSPACE_ID")  # Needed for Log Analytics ingestion
+#SUBSCRIPTION_ID = os.environ.get("AZURE_SUBSCRIPTION_ID")
+SUBSCRIPTION_ID = "562db19c-f304-45df-8cc6-e93f7daed8cb" 
+#RESOURCE_GROUP = os.environ.get("RESOURCE_GROUP")
+RESOURCE_GROUP = "dac-testing" 
+#WORKSPACE_NAME = os.environ.get("WORKSPACE_NAME")
+WORKSPACE_NAME = "dac-testing" 
+#WORKSPACE_ID = os.environ.get("WORKSPACE_ID")  # Needed for Log Analytics ingestion
+WORKSPACE_ID = "571370d7-e140-4061-ada9-a19996be547e" 
 
 class SentinelTestFramework:
     def __init__(self):

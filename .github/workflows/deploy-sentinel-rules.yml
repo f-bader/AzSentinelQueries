@@ -97,13 +97,23 @@ jobs:
             rule_name=$(basename "$rule_file" .yaml)
             echo "Rule name: $rule_name"
 
-            # Run the ARM deployment, appending the extra parameter only if defined
-            az deployment group create \
-              --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-              --template-file templates/arm-template.json \
-              --parameters workspace="${{ secrets.AZURE_WORKSPACE_NAME }}" \
-                           ruleName="$rule_name" \
-                           ruleData=@converted_rule.json \
-                           $extraParam
-          done
+            # Conditional deployment based on whether automationPlaybookId exists
+            if [ -n "$automationPlaybookId" ]; then
+              echo "Using Automation Playbook ID: $automationPlaybookId"
+              az deployment group create \
+                --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+                --template-file templates/arm-template.json \
+                --parameters workspace="${{ secrets.AZURE_WORKSPACE_NAME }}" \
+                 ruleName="$rule_name" \
+                 ruleData=@converted_rule.json \
+                 automationPlaybookId="$automationPlaybookId"
+            else
+              echo "No Automation Playbook ID provided in YAML, proceeding without it."
+              az deployment group create \
+                --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+                --template-file templates/arm-template.json \
+                --parameters workspace="${{ secrets.AZURE_WORKSPACE_NAME }}" \
+                 ruleName="$rule_name" \
+                 ruleData=@converted_rule.json
+            fi
 

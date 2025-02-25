@@ -84,9 +84,6 @@ class SentinelTestFramework:
             raise
 
     def replace_table_in_query(self, query, test_table):
-        """Replace table reference in KQL query"""
-        # Looking at your specific query, it starts with 'Event'
-        # Let's specifically check for that pattern first
         
         lines = query.split('\n')
         if lines and lines[0].strip().startswith('Event'):

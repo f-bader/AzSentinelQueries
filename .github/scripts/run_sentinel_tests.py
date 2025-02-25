@@ -177,7 +177,6 @@ class SentinelTestFramework:
         stream_name = f"Custom-{table_name}"
         
         try:
-            # Upload logs
             self.logs_client.upload(
                 rule_id=DCR_IMMUTABLEID,
                 stream_name=stream_name,
@@ -185,9 +184,8 @@ class SentinelTestFramework:
             )
             print(f"Successfully ingested test data from {data_file} into {table_name}")
             
-            # Allow time for ingestion to complete
-            print("Waiting for logs to be processed...")
-            time.sleep(60)  # Adjust based on your environment
+            print("Waiting for logs to be processed")
+            time.sleep(60) 
             
         except HttpResponseError as e:
             print(f"Failed to ingest test data: {e}")
@@ -345,28 +343,23 @@ class SentinelTestFramework:
             raise
 
     def run_rule(self, rule_id):
-        """Manually trigger rule execution"""
         try:
-            # Try different method names based on SDK version
-            if hasattr(self.sentinel_client, 'scheduled_analytics_rules'):
+            if hasattr(self.sentinel_client, 'scheduled_analytics_rules') and hasattr(self.sentinel_client.scheduled_analytics_rules, 'run'):
                 self.sentinel_client.scheduled_analytics_rules.run(
                     resource_group_name=RESOURCE_GROUP,
                     workspace_name=WORKSPACE_NAME,
                     rule_id=rule_id
                 )
-            elif hasattr(self.sentinel_client, 'alert_rules'):
+            elif hasattr(self.sentinel_client, 'alert_rules') and hasattr(self.sentinel_client.alert_rules, 'run'):
                 self.sentinel_client.alert_rules.run(
                     resource_group_name=RESOURCE_GROUP,
                     workspace_name=WORKSPACE_NAME,
                     rule_id=rule_id
                 )
             else:
-                # Try using direct REST API call as fallback
-                print("Could not find appropriate SDK method for running rule, attempting direct API call")
-                from azure.core.exceptions import HttpResponseError
+                print("Using direct API call")
                 import requests
                 
-                # Get the access token for direct API call
                 token = self.credential.get_token("https://management.azure.com/.default").token
                 api_version = "2022-09-01-preview"  # Adjust version as needed
                 

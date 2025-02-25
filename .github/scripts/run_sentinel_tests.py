@@ -83,17 +83,33 @@ class SentinelTestFramework:
             print(f"Files in custom directory: {os.listdir('custom') if os.path.exists('custom') else 'Directory not found'}")
             raise
 
-    def convert_duration_to_iso8601(self, duration_str):
-        """Convert duration strings like '30m', '1h', '1d' to ISO8601 format."""
-        if not duration_str or not isinstance(duration_str, str):
-            return duration_str
-            
-        # Already in ISO format
-        if duration_str.startswith('P') or duration_str.startswith('PT'):
-            return duration_str
-            
-        # Handle minute format: 30m -> PT30M
-        minute_match = re.match(r'^(\d+)m
+def convert_duration_to_iso8601(self, duration_str):
+    """Convert duration strings like '30m', '1h', '1d' to ISO8601 format."""
+    if not duration_str or not isinstance(duration_str, str):
+        return duration_str
+        
+    # Already in ISO format
+    if duration_str.startswith('P') or duration_str.startswith('PT'):
+        return duration_str
+        
+    # Handle minute format: 30m -> PT30M
+    if re.match(r'^\d+m$', duration_str):
+        minutes = re.match(r'^(\d+)m$', duration_str).group(1)
+        return f"PT{minutes}M"
+        
+    # Handle hour format: 1h -> PT1H
+    if re.match(r'^\d+h$', duration_str):
+        hours = re.match(r'^(\d+)h$', duration_str).group(1)
+        return f"PT{hours}H"
+        
+    # Handle day format: 1d -> P1D
+    if re.match(r'^\d+d$', duration_str):
+        days = re.match(r'^(\d+)d$', duration_str).group(1)
+        return f"P{days}D"
+        
+    # Return original if no match
+    return duration_str
+
 
     def ingest_test_data(self, table_name, data_file):
         """Ingest test data into the test table using proven method"""

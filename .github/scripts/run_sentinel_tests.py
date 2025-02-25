@@ -59,45 +59,64 @@ class SentinelTestFramework:
 
     def load_test_config(self, test_file):
         """Load test configuration from YAML file"""
-        with open(test_file, 'r') as file:
-            return yaml.safe_load(file)
+        try:
+            with open(test_file, 'r') as file:
+                config = yaml.safe_load(file)
+                print(f"Loaded test configuration: {json.dumps(config, indent=2)}")
+                return config
+        except Exception as e:
+            print(f"Error loading test file {test_file}: {e}")
+            print(f"Current directory: {os.getcwd()}")
+            print(f"Files in tests directory: {os.listdir('tests') if os.path.exists('tests') else 'Directory not found'}")
+            raise
 
     def load_production_rule(self, rule_file):
         """Load production rule definition from YAML file"""
-        with open(f"custom/{rule_file}", 'r') as file:
-            return yaml.safe_load(file)
+        try:
+            with open(f"custom/{rule_file}", 'r') as file:
+                rule_def = yaml.safe_load(file)
+                print(f"Loaded rule definition: {json.dumps(rule_def, indent=2)}")
+                return rule_def
+        except Exception as e:
+            print(f"Error loading rule file {rule_file}: {e}")
+            print(f"Current directory: {os.getcwd()}")
+            print(f"Files in custom directory: {os.listdir('custom') if os.path.exists('custom') else 'Directory not found'}")
+            raise
 
     def replace_table_in_query(self, query, test_table):
         """Replace table reference in KQL query"""
-        # Identify table pattern in KQL - this approach handles the most common patterns
-        # May need refinement for complex queries
+        # Looking at your specific query, it starts with 'Event'
+        # Let's specifically check for that pattern first
+        
+        lines = query.split('\n')
+        if lines and lines[0].strip().startswith('Event'):
+            print(f"Found starting table 'Event', replacing with '{test_table}'")
+            lines[0] = lines[0].replace('Event', test_table, 1)
+            return '\n'.join(lines)
+            
+        # More generic approach for other queries
         common_patterns = [
-            r'(\w+)\s*\|',  # Table | where ...
+            r'^\s*(\w+)', # First word in the query is often the table
             r'from\s+(\w+)',  # from Table
             r'join\s+(\w+)',  # join Table
+            r'(\w+)\s*\|',  # Table | where ...
         ]
         
-        # Find all potential table names
-        tables = []
         for pattern in common_patterns:
-            matches = re.finditer(pattern, query, re.IGNORECASE)
-            for match in matches:
-                tables.append(match.group(1))
+            matches = re.findall(pattern, query, re.MULTILINE)
+            if matches:
+                # Use the first match (the first table name in the query)
+                original_table = matches[0]
+                if original_table.lower() not in ['where', 'project', 'extend', 'summarize', 'count', 'take', 'top']:
+                    print(f"Detected original table: {original_table}")
+                    pattern = r'\b' + re.escape(original_table) + r'\b'
+                    # Replace only the first occurrence to avoid replacing table aliases
+                    modified = re.sub(pattern, test_table, query, count=1)
+                    return modified
         
-        # Remove duplicates and common KQL command words that might be mistaken for tables
-        exclude_words = ['where', 'project', 'extend', 'summarize', 'count', 'take', 'top', 'limit', 'order', 'sort', 'join']
-        tables = [t for t in tables if t.lower() not in exclude_words]
-        
-        # For simplicity in this example, we'll replace the first identified table
-        # In a production system, you might want to confirm with the user or use more sophisticated parsing
-        if tables:
-            original_table = tables[0]
-            print(f"Detected original table: {original_table}")
-            pattern = r'\b' + re.escape(original_table) + r'\b'
-            return re.sub(pattern, test_table, query)
-        else:
-            print("WARNING: Could not detect table name in query")
-            return query
+        # If we can't confidently identify the table, return the original query
+        print("WARNING: Could not detect table name in query, returning original")
+        return query
 
     def ingest_test_data(self, table_name, data_file):
         """Ingest test data into the test table using proven method"""
@@ -141,21 +160,131 @@ class SentinelTestFramework:
 
     def clone_rule_for_testing(self, rule_def, test_table):
         """Create a clone of the production rule pointing to test table"""
-        # Create modified rule
-        test_rule = rule_def.copy()
-        test_rule['id'] = f"test_{rule_def['id']}"
-        test_rule['displayName'] = f"TEST - {rule_def['displayName']}"
+        # Create modified rule with standardized field names for Sentinel API
+        test_rule = {}
         
-        # Replace table reference in query
-        test_rule['query'] = self.replace_table_in_query(rule_def['query'], test_table)
+        # Map from Detection as Code format to Sentinel API expected format
+        # Your rule uses 'name' for the display name, but Sentinel API expects 'displayName'
         
+        # First, copy all fields from the original definition
+        for key, value in rule_def.items():
+            test_rule[key] = value
+            
+        # Handle ID field - use original if present or generate a new one
+        if 'id' in rule_def:
+            test_rule['id'] = f"test_{rule_def['id']}"
+        else:
+            test_rule['id'] = f"test_rule_{int(time.time())}"
+            
+        # Handle display name field
+        if 'name' in rule_def:
+            # Your rule uses 'name' for display name
+            test_rule['displayName'] = f"TEST - {rule_def['name']}"
+        elif 'displayName' in rule_def:
+            test_rule['displayName'] = f"TEST - {rule_def['displayName']}"
+        else:
+            test_rule['displayName'] = f"TEST - Generated Rule {int(time.time())}"
+        
+        # Update query to use test table
+        if 'query' in rule_def:
+            modified_query = self.replace_table_in_query(rule_def['query'], test_table)
+            test_rule['query'] = modified_query
+        else:
+            print("ERROR: Could not find 'query' field in rule definition")
+            raise ValueError("Rule definition must contain a query field")
+        
+        # Print the mapped fields for debugging
+        print(f"Original 'name': {rule_def.get('name')}")
+        print(f"Mapped 'displayName': {test_rule.get('displayName')}")
+        print(f"Original 'id': {rule_def.get('id')}")
+        print(f"Mapped 'id': {test_rule.get('id')}")
+        
+        # Ensure all required fields are present for creating the rule
+        # Standard fields required by the Sentinel API
+        required_fields = [
+            'displayName', 'query', 'queryFrequency', 'queryPeriod',
+            'severity', 'triggerOperator', 'triggerThreshold'
+        ]
+        
+        # Set defaults for missing fields if needed
+        defaults = {
+            'queryFrequency': 'PT1H',  # 1 hour
+            'queryPeriod': 'PT1H',     # 1 hour
+            'severity': 'Medium',
+            'triggerOperator': 'GreaterThan',
+            'triggerThreshold': 0,
+            'enabled': True
+        }
+        
+        for field, default_value in defaults.items():
+            if field not in test_rule:
+                print(f"Adding default value for missing field '{field}': {default_value}")
+                test_rule[field] = default_value
+        
+        # Check if any required fields are still missing
+        missing_fields = [field for field in required_fields if field not in test_rule]
+        if missing_fields:
+            print(f"ERROR: Still missing required fields for rule creation: {missing_fields}")
+            raise ValueError(f"Cannot create rule without required fields: {missing_fields}")
+            
         # Create/update the test rule
-        response = self.sentinel_client.scheduled_analytics_rules.create_or_update(
-            resource_group_name=RESOURCE_GROUP,
-            workspace_name=WORKSPACE_NAME,
-            rule_id=test_rule['id'],
-            scheduled_analytics_rule=test_rule
-        )
+        try:
+            response = self.sentinel_client.scheduled_analytics_rules.create_or_update(
+                resource_group_name=RESOURCE_GROUP,
+                workspace_name=WORKSPACE_NAME,
+                rule_id=test_rule['id'],
+                scheduled_analytics_rule=test_rule
+            )
+            print(f"Successfully created/updated test rule {test_rule['id']}")
+            return test_rule['id']
+        except Exception as e:
+            print(f"Error creating test rule: {e}")
+            # Print more details about what was sent
+            print(f"Rule creation payload: {json.dumps({k: v for k, v in test_rule.items() if k != 'query'}, indent=2)}")
+            raise
+        
+        # Ensure all required fields are present for creating the rule
+        # Standard fields required by the Sentinel API
+        required_fields = [
+            'displayName', 'query', 'queryFrequency', 'queryPeriod',
+            'severity', 'triggerOperator', 'triggerThreshold'
+        ]
+        
+        # Set defaults for missing fields
+        defaults = {
+            'queryFrequency': 'PT1H',  # 1 hour
+            'queryPeriod': 'PT1H',     # 1 hour
+            'severity': 'Medium',
+            'triggerOperator': 'GreaterThan',
+            'triggerThreshold': 0,
+            'enabled': True
+        }
+        
+        for field, default_value in defaults.items():
+            if field not in test_rule:
+                print(f"Adding default value for missing field '{field}': {default_value}")
+                test_rule[field] = default_value
+        
+        # Check if any required fields are still missing
+        missing_fields = [field for field in required_fields if field not in test_rule]
+        if missing_fields:
+            print(f"ERROR: Still missing required fields for rule creation: {missing_fields}")
+            raise ValueError(f"Cannot create rule without required fields: {missing_fields}")
+            
+        # Create/update the test rule
+        try:
+            response = self.sentinel_client.scheduled_analytics_rules.create_or_update(
+                resource_group_name=RESOURCE_GROUP,
+                workspace_name=WORKSPACE_NAME,
+                rule_id=test_rule['id'],
+                scheduled_analytics_rule=test_rule
+            )
+            print(f"Successfully created/updated test rule {test_rule['id']}")
+        except Exception as e:
+            print(f"Error creating test rule: {e}")
+            # Print more details about what was sent
+            print(f"Rule creation payload: {json.dumps(test_rule, indent=2)}")
+            raise
         
         print(f"Created test rule: {test_rule['id']}")
         return test_rule['id']

@@ -1,7 +1,7 @@
 # tests/test_rule1.yaml
 name: "Test for Rule 1"
 production_rule: "SysmonObfuscatedPowershell.yaml"
-test_table: "TestLogs"
+test_table: "dactesting_CL"
 test_cases:
   - name: "Positive Test - Should Trigger"
     data_file: "rule1_positive.json"

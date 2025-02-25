@@ -23,7 +23,7 @@
       "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
       "kind": "[parameters('ruleData').kind]",
       "apiVersion": "2023-12-01-preview",
-      "properties": "[union(parameters('ruleData'), json(concat('{\"actions\":', if(empty(parameters('automationPlaybookId')), '[]', concat('[{\"logicAppResourceId\":\"', parameters('automationPlaybookId'), '\"}]')), '}')))]"
+      "properties": "[union(parameters('ruleData'), if(empty(parameters('automationPlaybookId')), json('{\"actions\": []}'), json(concat('{\"actions\":[{\"logicAppResourceId\":\"', parameters('automationPlaybookId'), '\"}]}'))))]"
     }
   ]
 }

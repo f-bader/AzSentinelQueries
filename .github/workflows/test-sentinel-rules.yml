@@ -1,13 +1,12 @@
 name: Sentinel Analytics Rules Testing
 
 on:
-  push:
+  pull_request:
+    branches: [ main ]
     paths:
       - 'custom/**'
       - 'tests/**'
       - 'test_data/**'
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -36,4 +35,3 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
           WORKSPACE_NAME: ${{ secrets.WORKSPACE_NAME }}
-

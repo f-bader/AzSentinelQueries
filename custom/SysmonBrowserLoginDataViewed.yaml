@@ -51,4 +51,5 @@ entityMappings:
       - columnName: Computer
         identifier: HostName
 suppressionDuration: 5h
-
+automationPlaybooks:
+  - resourceId: "/subscriptions/562db19c-f304-45df-8cc6-e93f7daed8cb/resourceGroups/dac-testing/providers/Microsoft.Logic/workflows/Sentinel_Alerts_to_Github"

@@ -116,4 +116,4 @@ jobs:
                  ruleName="$rule_name" \
                  ruleData=@converted_rule.json
             fi
-
+          done

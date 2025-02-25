@@ -229,12 +229,56 @@ class SentinelTestFramework:
             
         # Create/update the test rule
         try:
-            response = self.sentinel_client.scheduled_analytics_rules.create_or_update(
-                resource_group_name=RESOURCE_GROUP,
-                workspace_name=WORKSPACE_NAME,
-                rule_id=test_rule['id'],
-                scheduled_analytics_rule=test_rule
-            )
+            # Check available attributes in sentinel_client to help debug
+            print(f"Available client attributes: {dir(self.sentinel_client)}")
+            
+            # Try different method names based on SDK version
+            if hasattr(self.sentinel_client, 'scheduled_analytics_rules'):
+                response = self.sentinel_client.scheduled_analytics_rules.create_or_update(
+                    resource_group_name=RESOURCE_GROUP,
+                    workspace_name=WORKSPACE_NAME,
+                    rule_id=test_rule['id'],
+                    scheduled_analytics_rule=test_rule
+                )
+            elif hasattr(self.sentinel_client, 'alert_rules'):
+                response = self.sentinel_client.alert_rules.create_or_update(
+                    resource_group_name=RESOURCE_GROUP,
+                    workspace_name=WORKSPACE_NAME,
+                    rule_id=test_rule['id'],
+                    alert_rule=test_rule
+                )
+            elif hasattr(self.sentinel_client, 'alert_rule_templates'):
+                # Some versions use alert_rule_templates instead
+                response = self.sentinel_client.alert_rule_templates.create_or_update(
+                    resource_group_name=RESOURCE_GROUP,
+                    workspace_name=WORKSPACE_NAME,
+                    rule_id=test_rule['id'],
+                    alert_rule=test_rule
+                )
+            else:
+                # Try using direct REST API call as fallback
+                print("Could not find appropriate SDK method, attempting direct API call")
+                from azure.mgmt.resource import ResourceManagementClient
+                
+                resource_client = ResourceManagementClient(self.credential, SUBSCRIPTION_ID)
+                api_version = "2022-09-01-preview"  # Adjust version as needed
+                
+                resource_url = (
+                    f"/subscriptions/{SUBSCRIPTION_ID}/resourceGroups/{RESOURCE_GROUP}"
+                    f"/providers/Microsoft.OperationalInsights/workspaces/{WORKSPACE_NAME}"
+                    f"/providers/Microsoft.SecurityInsights/alertRules/{test_rule['id']}"
+                )
+                
+                response = resource_client.resources.begin_create_or_update(
+                    resource_group_name=RESOURCE_GROUP,
+                    resource_provider_namespace="Microsoft.SecurityInsights",
+                    parent_resource_path=f"Microsoft.OperationalInsights/workspaces/{WORKSPACE_NAME}",
+                    resource_type="alertRules",
+                    resource_name=test_rule['id'],
+                    api_version=api_version,
+                    parameters=test_rule
+                )
+            
             print(f"Successfully created/updated test rule {test_rule['id']}")
             return test_rule['id']
         except Exception as e:
@@ -292,11 +336,50 @@ class SentinelTestFramework:
     def run_rule(self, rule_id):
         """Manually trigger rule execution"""
         try:
-            self.sentinel_client.scheduled_analytics_rules.run(
-                resource_group_name=RESOURCE_GROUP,
-                workspace_name=WORKSPACE_NAME,
-                rule_id=rule_id
-            )
+            # Try different method names based on SDK version
+            if hasattr(self.sentinel_client, 'scheduled_analytics_rules'):
+                self.sentinel_client.scheduled_analytics_rules.run(
+                    resource_group_name=RESOURCE_GROUP,
+                    workspace_name=WORKSPACE_NAME,
+                    rule_id=rule_id
+                )
+            elif hasattr(self.sentinel_client, 'alert_rules'):
+                self.sentinel_client.alert_rules.run(
+                    resource_group_name=RESOURCE_GROUP,
+                    workspace_name=WORKSPACE_NAME,
+                    rule_id=rule_id
+                )
+            else:
+                # Try using direct REST API call as fallback
+                print("Could not find appropriate SDK method for running rule, attempting direct API call")
+                from azure.mgmt.resource import ResourceManagementClient
+                from azure.core.exceptions import HttpResponseError
+                import requests
+                
+                resource_client = ResourceManagementClient(self.credential, SUBSCRIPTION_ID)
+                api_version = "2022-09-01-preview"  # Adjust version as needed
+                
+                # Get the access token for direct API call
+                token = self.credential.get_token("https://management.azure.com/.default").token
+                
+                # Construct the URL for the run action
+                url = (
+                    f"https://management.azure.com/subscriptions/{SUBSCRIPTION_ID}/resourceGroups/{RESOURCE_GROUP}"
+                    f"/providers/Microsoft.OperationalInsights/workspaces/{WORKSPACE_NAME}"
+                    f"/providers/Microsoft.SecurityInsights/alertRules/{rule_id}/run?api-version={api_version}"
+                )
+                
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json"
+                }
+                
+                response = requests.post(url, headers=headers)
+                
+                if response.status_code >= 400:
+                    print(f"Error running rule via direct API: {response.status_code} - {response.text}")
+                    raise HttpResponseError(response=response)
+                
             print(f"Triggered execution of rule: {rule_id}")
             
             # Give the rule time to execute

@@ -41,16 +41,32 @@ jobs:
           for rule_file in $(find custom -type f -name '*.yaml'); do
             echo "Deploying rule from file: $rule_file"
             
-            # Extract the automation playbook resource ID (if defined)
-            automationPlaybookId=$(yq eval '.automationPlaybooks[0].resourceId // ""' "$rule_file")
-            if [ -n "$automationPlaybookId" ]; then
-              echo "Using Automation Playbook ID: $automationPlaybookId"
-              extraParam="--parameters automationPlaybookId=\"$automationPlaybookId\""
+            # Debug: Show the YAML structure
+            echo "YAML file contents:"
+            cat "$rule_file"
+            
+            # Check if automationPlaybooks key exists at all in the YAML
+            has_playbooks=$(yq eval 'has("automationPlaybooks")' "$rule_file")
+            echo "Has automationPlaybooks key: $has_playbooks"
+            
+            # Only try to extract if the key exists
+            if [ "$has_playbooks" = "true" ]; then
+              # Get the playbook array length to check if it's empty
+              playbook_count=$(yq eval '.automationPlaybooks | length' "$rule_file")
+              echo "Number of automation playbooks: $playbook_count"
+              
+              if [ "$playbook_count" -gt 0 ]; then
+                automationPlaybookId=$(yq eval '.automationPlaybooks[0].resourceId' "$rule_file")
+                echo "Found Automation Playbook ID: $automationPlaybookId"
+              else
+                automationPlaybookId=""
+                echo "Automation Playbooks array is empty"
+              fi
             else
-              echo "No Automation Playbook ID provided in YAML, proceeding without it."
-              extraParam=""
+              automationPlaybookId=""
+              echo "No Automation Playbooks key found in YAML"
             fi
-
+            
             # Convert the YAML rule file to JSON
             yq eval -o=json "$rule_file" > temp_rule.json
 
@@ -92,13 +108,15 @@ jobs:
                  else . end |
                  if (has("enabled") | not) then
                    .enabled = true
-                 else . end' temp_rule.json > converted_rule.json
+                 else . end |
+                 # Remove automationPlaybooks from rule data to prevent duplication
+                 del(.automationPlaybooks)' temp_rule.json > converted_rule.json
 
             rule_name=$(basename "$rule_file" .yaml)
             echo "Rule name: $rule_name"
 
-            # Conditional deployment based on whether automationPlaybookId exists
-            if [ -n "$automationPlaybookId" ]; then
+            # Conditional deployment based on whether automationPlaybookId exists and is not empty
+            if [ -n "$automationPlaybookId" ] && [ "$automationPlaybookId" != "null" ]; then
               echo "Using Automation Playbook ID: $automationPlaybookId"
               az deployment group create \
                 --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \

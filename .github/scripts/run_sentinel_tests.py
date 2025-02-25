@@ -154,26 +154,21 @@ class SentinelTestFramework:
         return operator_map.get(operator, operator)
 
     def ingest_test_data(self, table_name, data_file):
-        """Ingest test data into the test table using proven method"""
-        # Load test data
+        test_data = ""
         with open(f"test_data/{data_file}", 'r') as file:
             test_data = json.load(file)
         
-        # Ensure test data has a timestamp for the current time
         if isinstance(test_data, dict):
-            # Single entry
             if 'TimeGenerated' not in test_data:
                 test_data['TimeGenerated'] = datetime.utcnow().isoformat()
             test_data = [test_data]
         elif isinstance(test_data, list):
-            # List of entries
             for entry in test_data:
                 if 'TimeGenerated' not in entry:
                     entry['TimeGenerated'] = datetime.utcnow().isoformat()
         
         print(f"Ingesting test data into table: {table_name}")
         
-        # Use the custom table stream name format
         stream_name = f"Custom-{table_name}"
         
         try:
@@ -183,7 +178,6 @@ class SentinelTestFramework:
                 logs=test_data
             )
             print(f"Successfully ingested test data from {data_file} into {table_name}")
-            
             print("Waiting for logs to be processed")
             time.sleep(60) 
             
@@ -361,9 +355,8 @@ class SentinelTestFramework:
                 import requests
                 
                 token = self.credential.get_token("https://management.azure.com/.default").token
-                api_version = "2022-09-01-preview"  # Adjust version as needed
+                api_version = "2022-09-01-preview"
                 
-                # Construct the URL for the run action
                 url = (
                     f"https://management.azure.com/subscriptions/{SUBSCRIPTION_ID}/resourceGroups/{RESOURCE_GROUP}"
                     f"/providers/Microsoft.OperationalInsights/workspaces/{WORKSPACE_NAME}"
@@ -382,10 +375,8 @@ class SentinelTestFramework:
                     raise HttpResponseError(response=response)
                 
             print(f"Triggered execution of rule: {rule_id}")
-            
-            # Give the rule time to execute
-            print("Waiting for rule to execute...")
-            time.sleep(60)  # Adjust based on rule complexity
+            print("Waiting for rule to execute")
+            time.sleep(60)
             
         except Exception as e:
             print(f"Failed to run rule: {e}")
@@ -637,7 +628,7 @@ class SentinelTestFramework:
 
 
 if __name__ == "__main__":
-    # Check for required environment variables
+
     required_vars = [
         "AZURE_SUBSCRIPTION_ID", "RESOURCE_GROUP", "WORKSPACE_NAME",
         "ENDPOINT_URI", "DCR_IMMUTABLEID", 

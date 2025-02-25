@@ -1,5 +1,5 @@
 id: 4a1b2c3d-4e5f-6789-0123-456789abcdd
-name: Obfuscated PowerShell Command Detection
+name: Obfuscated PowerShell Command Detection 2
 version: 1.0.0
 kind: Scheduled
 description: Detects obfuscated PowerShell command lines by monitoring for multiple escape characters (backticks, percent signs, and carets) that may indicate malicious obfuscation attempts.

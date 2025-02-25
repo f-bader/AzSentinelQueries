@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Sentinel Analytics Rules Test Framework

@@ -2,7 +2,7 @@ name: Sentinel Analytics Rules Testing
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ "*" ]
     paths:
       - 'custom/**'
       - 'tests/**'

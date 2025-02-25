@@ -40,8 +40,21 @@ jobs:
         run: |
           for rule_file in $(find custom -type f -name '*.yaml'); do
             echo "Deploying rule from file: $rule_file"
+            
+            # Extract the automation playbook resource ID (if defined)
+            automationPlaybookId=$(yq eval '.automationPlaybooks[0].resourceId // ""' "$rule_file")
+            if [ -n "$automationPlaybookId" ]; then
+              echo "Using Automation Playbook ID: $automationPlaybookId"
+              extraParam="--parameters automationPlaybookId=\"$automationPlaybookId\""
+            else
+              echo "No Automation Playbook ID provided in YAML, proceeding without it."
+              extraParam=""
+            fi
+
+            # Convert the YAML rule file to JSON
             yq eval -o=json "$rule_file" > temp_rule.json
 
+            # Perform necessary JSON transformations
             jq 'if has("queryFrequency") then
                    .queryFrequency |= (
                      if test("^[0-9]+m$") then "PT" + (. | capture("^(?<minutes>[0-9]+)m").minutes) + "M"
@@ -84,11 +97,13 @@ jobs:
             rule_name=$(basename "$rule_file" .yaml)
             echo "Rule name: $rule_name"
 
+            # Run the ARM deployment, appending the extra parameter only if defined
             az deployment group create \
               --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
               --template-file templates/arm-template.json \
               --parameters workspace="${{ secrets.AZURE_WORKSPACE_NAME }}" \
                            ruleName="$rule_name" \
-                           ruleData=@converted_rule.json
+                           ruleData=@converted_rule.json \
+                           $extraParam
           done
 

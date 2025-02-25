@@ -205,7 +205,9 @@ class SentinelTestFramework:
             
         # Handle ID field - use original if present or generate a new one
         if 'id' in rule_def:
-            test_rule['id'] = f"test_{rule_def['id']}"
+            # Add timestamp to ensure uniqueness
+            test_rule['id'] = f"test_{rule_def['id']}_{int(time.time())}"
+            #test_rule['id'] = f"test_{rule_def['id']}"
         else:
             test_rule['id'] = f"test_rule_{int(time.time())}"
             

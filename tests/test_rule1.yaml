@@ -1,0 +1,11 @@
+# tests/test_rule1.yaml
+name: "Test for Rule 1"
+production_rule: "SysmonCobaltStrikeBeaconsDetection.yaml"
+test_table: "TestLogs"
+test_cases:
+  - name: "Positive Test - Should Trigger"
+    data_file: "rule1_positive.json"
+    expected_result: "alert"
+  - name: "Negative Test - Should Not Trigger"
+    data_file: "rule1_negative.json"
+    expected_result: "no_alert"

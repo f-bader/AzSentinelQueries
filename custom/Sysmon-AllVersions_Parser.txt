@@ -13,4 +13,3 @@ Event
 // end fix
 | parse RuleName with * 'technique_id=' TechniqueId ',' * 'technique_name=' TechniqueName
 | parse Hashes with * 'SHA1=' SHA1 ',' * 'MD5=' MD5 ',' * 'SHA256=' SHA256 ',' * 'IMPHASH=' IMPHASH 
-

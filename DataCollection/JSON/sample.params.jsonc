@@ -1,0 +1,58 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        // Custom table name - Don't add _CL suffix
+        "tableName": {
+            "value": "myCustomJSONTable"
+        },
+        // Schema of the custom table
+        "tableSchema": {
+            "value": [
+                {
+                    "name": "TimeGenerated",
+                    "type": "datetime"
+                },
+                {
+                    "name": "CustomField1",
+                    "type": "string"
+                },
+                {
+                    "name": "CustomField2",
+                    "type": "int"
+                }
+            ]
+        },
+        // Path on the local disk for the log file to collect. May include wildcards. Enter multiple file patterns separated by commas (AMA version 1.26 or higher required for multiple file patterns on Linux).
+        "filePatterns": {
+            "value": "/var/log/myCustomTable.log"
+        },
+        // Log ingestion artifacts
+        "dataCollectionResourceGroup": {
+            "value": "rg-TENANTNAME-SentinelIngestion"
+        },
+        "dataCollectionEndpointName": {
+            "value": "dce-DataCollectionEndpointName"
+        },
+        "dataCollectionRuleDescription": {
+            "value": "Custom data collection rule for XYZ"
+        },
+        "dataCollectionRuleName": {
+            "value": "dcr-DataCollectionRuleName"
+        },
+        // Data collection rule transformation parameters
+        "transformKql": {
+            "value": "source"
+        },
+        // Sentinel workspace parameters
+        "SentinelWorkspaceLocation": {
+            "value": "westeurope"
+        },
+        "SentinelWorkspaceResourceGroup": {
+            "value": "rg-TENANTNAME-SentinelCore"
+        },
+        "SentinelWorkspaceName": {
+            "value": "log-TENANTNAME-sentinel"
+        }
+    }
+}

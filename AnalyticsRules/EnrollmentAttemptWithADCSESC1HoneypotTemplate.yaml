@@ -1,0 +1,80 @@
+id: f40b688b-e270-40f7-b88a-7f12e6a1b1e6
+name: Enrollment attempt with AD CS ESC1 honeypot template
+version: 1.0.0
+kind: NRT
+description: |-
+  An AD CS honeypot template that is vulnerable to the ESC1 was requested. This is a high fidelity alert and indicator that the used user account was compromised.
+  The requestor device can also be considered compromised.
+
+  https://posts.specterops.io/certified-pre-owned-d95910965cd2
+severity: Medium
+tactics:
+  - CredentialAccess
+relevantTechniques:
+  - T1649
+query: |-
+  SecurityEvent
+  // Report all certificate request to the honeypot PKI
+  | where EventID == 4886
+  | parse EventData with * 'RequestClientInfo">' * 'User: ' RequestUser: string 'Machine:' RequestMachine: string 'Process:' RequestProcess: string "</" *
+  | parse EventData with * 'CertificateTemplate">' CertificateTemplate: string "</" *
+  // Check if the request was denied as planned
+  | lookup (SecurityEvent
+      | where EventID == 4888
+      | project DeniedTimeGenerated = TimeGenerated, RequestId, DeniedActivity = Activity)
+      on RequestId
+  | extend DeniedActivity = iff(isempty(DeniedActivity), "Request was NOT denied", "Request was denied")
+  | extend AlertSeverity = iff(DeniedActivity == "Request was NOT denied", "High", "Medium")
+  | extend Hostname = split(RequestMachine, '.')[0]
+  | extend HostDomainName = split(RequestMachine, '.')[1]
+  | project
+      TimeGenerated,
+      Computer,
+      Activity,
+      RequestUser,
+      RequestMachine,
+      RequestProcess,
+      CertificateTemplate,
+      Subject,
+      DeniedTimeGenerated,
+      DeniedActivity,
+      RequestId,
+      EventID,
+      EventData,
+      AlertSeverity,
+      Hostname,
+      HostDomainName
+  // You might want to filter on the Computer field to only alert on AD CS honeypot events
+alertDetailsOverride:
+  alertSeverityColumnName: AlertSeverity
+  alertDynamicProperties: []
+customDetails:
+  RequestId: RequestId
+  Subject: Subject
+entityMappings:
+  - entityType: Account
+    fieldMappings:
+      - identifier: FullName
+        columnName: RequestUser
+  - entityType: Host
+    fieldMappings:
+      - identifier: HostName
+        columnName: Hostname
+      - identifier: DnsDomain
+        columnName: HostDomainName
+suppressionEnabled: false
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5d
+    matchingMethod: Selected
+    groupByEntities:
+      - Account
+    groupByAlertDetails:
+      - DisplayName
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult

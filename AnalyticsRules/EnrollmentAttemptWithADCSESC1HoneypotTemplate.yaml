@@ -1,6 +1,6 @@
 id: f40b688b-e270-40f7-b88a-7f12e6a1b1e6
 name: Enrollment attempt with AD CS ESC1 honeypot template
-version: 1.0.0
+version: 1.0.1
 kind: NRT
 description: |-
   An AD CS honeypot template that is vulnerable to the ESC1 was requested. This is a high fidelity alert and indicator that the used user account was compromised.
@@ -27,6 +27,8 @@ query: |-
   | extend AlertSeverity = iff(DeniedActivity == "Request was NOT denied", "High", "Medium")
   | extend Hostname = split(RequestMachine, '.')[0]
   | extend HostDomainName = split(RequestMachine, '.')[1]
+  | extend RequestUserDomain = split(RequestUser, @'\')[0]
+  | extend RequestUserName = split(RequestUser, @'\')[1]
   | project
       TimeGenerated,
       Computer,
@@ -43,8 +45,9 @@ query: |-
       EventData,
       AlertSeverity,
       Hostname,
-      HostDomainName
-  // You might want to filter on the Computer field to only alert on AD CS honeypot events
+      HostDomainName,
+      RequestUserDomain,
+      RequestUserName
 alertDetailsOverride:
   alertSeverityColumnName: AlertSeverity
   alertDynamicProperties: []
@@ -54,8 +57,10 @@ customDetails:
 entityMappings:
   - entityType: Account
     fieldMappings:
-      - identifier: FullName
-        columnName: RequestUser
+      - identifier: NTDomain
+        columnName: RequestUserDomain
+      - identifier: Name
+        columnName: RequestUserName
   - entityType: Host
     fieldMappings:
       - identifier: HostName

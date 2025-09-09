@@ -1,0 +1,24 @@
+name: Pull external data source Microsoft 365 IP Ranges
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 6 9 * *"
+
+jobs:
+  pull-external-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Pull external data and modify if needed
+        shell: pwsh
+        run: |
+          ./.github/scripts/M365IpRanges.ps1
+
+      - name: Commit updated data to repo
+        uses: stefanzweifel/git-auto-commit-action@v5

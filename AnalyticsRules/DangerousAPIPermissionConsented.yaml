@@ -1,11 +1,16 @@
 id: c44269aa-9879-42d9-a8f4-56a93bb8c6ac
-name: Dangerous API permission consented
-version: 1.0.3
+name: Granting of High-Risk Privilege Escalation Permissions to Service Principal
+version: 1.0.4
 kind: Scheduled
 description: |
-  One or more high priv API permission were granted to an application.
+  This rule identifies when a Service Principal is granted specific, high-risk Application Permissions for Microsoft Graph that can lead to immediate tenant-wide privilege escalation.
 
-  Check if this is really necessary and otherwise remove the permissions
+  The query monitors AuditLogs for successful "Add app role assignment to service principal" operations. It specifically looks for the addition of the following sensitive permission GUIDs:
+  * RoleManagement.ReadWrite.Directory (9e3f62cf...): Allows the app to grant itself or others any role, including Global Administrator.
+  * AppRoleAssignment.ReadWrite.All (06b708a9...): Allows the app to grant additional permissions to applications, enabling a path to grant the permission above.
+  * Application.ReadWrite.All (1bfefb4e...): Allows the app to modify other applications, potentially adding credentials to run as a highly privileged identity.
+
+  If an attacker compromises an account with the ability to grant admin consent (or compromises an existing Service Principal with AppRoleAssignment.ReadWrite.All), they can assign these permissions to a backdoor Service Principal to achieve persistence and full dominance over the Entra ID tenant.
 severity: High
 queryFrequency: 31m
 queryPeriod: 31m

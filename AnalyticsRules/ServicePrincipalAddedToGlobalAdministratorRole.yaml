@@ -1,0 +1,63 @@
+id: ad23a34c-ba65-4096-9729-fb2c6742db71
+name: Service Principal Added to Global Administrator Role
+version: 1.0.0
+kind: Scheduled
+description: |-
+  This rule detects when a Service Principal is granted the Global Administrator role in Entra ID (formerly Azure AD).
+  Assigning highly privileged roles to non-human accounts (Service Principals) increases the attack surface and is often an indicator of persistence mechanisms or privilege escalation by an attacker.
+severity: High
+queryFrequency: 15m
+queryPeriod: 20m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+- Persistence
+- PrivilegeEscalation
+relevantTechniques:
+- T1098.003
+query: |-
+  AuditLogs
+  | where OperationName =~ "Add member to role"
+  // added to global admin
+  | where TargetResources has "62e90394-69f5-4237-9190-012177145e10"
+  | mv-apply AddedRole = TargetResources to typeof(dynamic) on ( where AddedRole.type == "Role" )
+  | mv-apply AddedServicePrincipal = TargetResources to typeof(dynamic) on ( where AddedServicePrincipal.type == "ServicePrincipal" )
+  | extend EntraIDRoleDisplayName = "Global Administrator"
+  | extend EntraIDRoleId = tostring(AddedRole.id)
+  | extend EntraIDSPAdded = tostring(AddedServicePrincipal.displayName)
+  | extend EntraIDSPObjectId = tostring(AddedServicePrincipal.id)
+  | extend Actor = coalesce(tostring(parse_json(tostring(InitiatedBy.user)).userPrincipalName), tostring(parse_json(tostring(InitiatedBy.app)).id))
+  | extend IPAddress = coalesce(tostring(parse_json(tostring(InitiatedBy.user)).ipAddress), tostring(parse_json(tostring(InitiatedBy.app)).ipAddress))
+  | project
+      TimeGenerated,
+      OperationName,
+      EntraIDRoleDisplayName,
+      EntraIDRoleId,
+      EntraIDSPAdded,
+      EntraIDSPObjectId,
+      Actor,
+      IPAddress
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: SingleAlert
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - identifier: ObjectGuid
+    columnName: EntraIDSPObjectId
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+suppressionDuration: 5h
+

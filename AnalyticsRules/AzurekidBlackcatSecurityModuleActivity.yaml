@@ -1,0 +1,50 @@
+id: bd110a3e-7ef8-41c8-a9c6-5fe0f5c13aea
+name: AzureKid BlackCat Security Module Activity
+version: 1.0.0
+kind: NRT
+description: |-
+  This rule identifies HTTP requests made to the Microsoft Graph API where the 'UserAgent' string contains "BlackCat". This signature is associated with the AzureKid BlackCat PowerShell module, a security assessment and auditing tool designed to validate Microsoft Azure environment configurations and identify potential security risks.
+
+  While this tool is used for legitimate security testing, its presence in unexpected contexts may indicate unauthorized reconnaissance, internal auditing without change control, or a threat actor using open-source tools to map the Azure environment.
+
+  Reference: https://github.com/azurekid/blackcat
+severity: Medium
+tactics:
+- Discovery
+- Reconnaissance
+relevantTechniques:
+- T1087.004
+- T1526
+- T1082
+- T1595
+query: |-
+  MicrosoftGraphActivityLogs
+  | where UserAgent contains "BlackCat"
+  | where UserId != "5b58f023-df41-4ddf-a0e6-ea9161f7606d"
+customDetails:
+  SessionId: SessionId
+  UniqueTokenId: SignInActivityId
+entityMappings:
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+- entityType: CloudApplication
+  fieldMappings:
+  - identifier: AppId
+    columnName: AppId
+suppressionEnabled: true
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: SingleAlert
+

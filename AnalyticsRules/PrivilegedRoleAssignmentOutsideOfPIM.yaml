@@ -1,0 +1,63 @@
+id: f47104dd-c4b1-47b9-8406-7eda3016b787
+name: Privileged Role Assignment Outside of PIM
+version: 1.0.0
+kind: NRT
+description: |-
+  Detected that a user account was assigned to an Azure AD directory role without using Privileged Identity Management (PIM).
+  This activity indicated that standard security governance controls—such as Just-In-Time (JIT) access, approval workflows, and time-bound duration—were bypassed.
+  This action created "standing access" (permanent privileges) for the target account, which is a significant security risk indicating:
+  * Persistence: An attacker solidifying their foothold by hard-coding an account into a high-privileged role to survive future token resets or PIM policy changes.
+  * Policy Violation/Evasion: An administrator intentionally circumventing audit trails and justification requirements associated with PIM.
+severity: High
+tactics:
+- PrivilegeEscalation
+- DefenseEvasion
+- Persistence
+relevantTechniques:
+- T1098.003
+- T1562
+- T1078.004
+query: |-
+  AuditLogs
+  | where OperationName startswith "Add member to role outside of PIM"
+  | extend EntraIDRoleDisplayName = tostring(TargetResources[0].displayName)
+  | extend EntraIDRoleId = tostring(AdditionalDetails[0].value)
+  | extend EntraIDUserAdded = tostring(TargetResources[2].displayName)
+  | extend EntraIDObjectId = tostring(TargetResources[2].id)
+  | extend Actor = tostring(parse_json(tostring(InitiatedBy.user)).userPrincipalName)
+  | project
+      TimeGenerated,
+      OperationName,
+      EntraIDRoleDisplayName,
+      EntraIDRoleId,
+      EntraIDUserAdded,
+      EntraIDObjectId,
+      Actor
+customDetails:
+  EntraRole: EntraIDRoleDisplayName
+entityMappings:
+- entityType: Account
+  fieldMappings:
+  - identifier: Name
+    columnName: EntraIDUserAdded
+  - identifier: AadUserId
+    columnName: EntraIDObjectId
+- entityType: Account
+  fieldMappings:
+  - identifier: Name
+    columnName: Actor
+suppressionEnabled: false
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+

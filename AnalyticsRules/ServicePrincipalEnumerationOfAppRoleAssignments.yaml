@@ -1,0 +1,47 @@
+id: c1c31ed6-925b-4385-905d-c1161d6a955c
+name: Service Principal Enumeration of App Role Assignments
+version: 1.0.0
+kind: NRT
+description: |-
+  This rule detects a non-human identity (Service Principal or Managed Identity) utilizing the Microsoft Graph API to list App Role assignments (`/appRoleAssignments`). The query filters for `GET` requests where the `UserId` is empty, isolating activity performed by applications rather than interactive users.
+
+  This behavior is potentially suspicious as it is a common reconnaissance technique. An attacker who has compromised a Service Principal may use this API call to map out privileges and discover high-value permissions (e.g., `Directory.ReadWrite.All` or `RoleManagement.ReadWrite.Directory`) assigned to that principal or others, facilitating lateral movement or privilege escalation.
+severity: Medium
+tactics:
+- Discovery
+relevantTechniques:
+- T1069.003
+query: |-
+  MicrosoftGraphActivityLogs
+  | where RequestMethod == "GET"
+  | where isempty( UserId )
+  | where RequestUri has_all ("/servicePrincipals/","/appRoleAssignments")
+alertDetailsOverride:
+  alertDynamicProperties: []
+customDetails:
+  UniqueTokenId: UniqueTokenId
+  SessionId: SessionId
+entityMappings:
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+- entityType: CloudApplication
+  fieldMappings:
+  - identifier: AppId
+    columnName: AppId
+suppressionEnabled: false
+suppressionDuration: 5h
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+

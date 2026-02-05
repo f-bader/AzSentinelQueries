@@ -1,0 +1,40 @@
+id: a69eaa7b-d74b-45e7-b656-f64daad61b3d
+name: Service Principal Sign-in from New Country
+version: 1.0.0
+kind: Scheduled
+description: This rule detects successful sign-ins (ResultType == 0) by a Service Principal from a country that has not been observed in the preceding 14 days. It establishes a baseline of "known" locations for each AppId over a two-week period and alerts when a login occurs from a location outside of this baseline. This behavior may indicate that a Service Principal's credentials have been compromised and are being used from an anomalous location.
+severity: Medium
+queryFrequency: 1h
+queryPeriod: 14d
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+- InitialAccess
+relevantTechniques:
+- T1078.004
+query: |-
+  let KnownCountries = AADServicePrincipalSignInLogs
+      | where TimeGenerated between (ago(14d) .. ago(70m)) 
+      | where ResultType == 0
+      | extend Country = tostring(todynamic(LocationDetails).countryOrRegion)
+      | summarize by AppId, Country;
+  AADServicePrincipalSignInLogs
+  | where ingestion_time() > ago(60m)
+  | where ResultType == 0
+  | extend Country = tostring(todynamic(LocationDetails).countryOrRegion)
+  | join kind=leftanti KnownCountries on AppId, Country
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+suppressionDuration: 5h
+

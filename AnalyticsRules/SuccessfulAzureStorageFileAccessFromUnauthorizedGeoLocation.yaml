@@ -1,0 +1,55 @@
+id: 2241780d-90b1-4142-af41-6ee218d03b88
+name: Successful Azure Storage File Access from Unauthorized Geo-Location
+version: 1.0.0
+kind: Scheduled
+description: |-
+  This analytics rule detects successful "GetFile" operations performed on Azure Storage accounts from IP addresses located outside of the organization's designated allowed countries (United Kingdom, Netherlands, Germany).
+
+  The query analyzes StorageFileLogs for successful status codes (200) and resolves the caller's IP address to its geolocation. Access attempts from unexpected countries may indicate compromised credentials, a misconfigured application, or unauthorized data exfiltration attempts.
+severity: Medium
+queryFrequency: 10m
+queryPeriod: 13m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+- Collection
+- InitialAccess
+relevantTechniques:
+- T1530
+- T1078
+query: |-
+  let KnownCountries= dynamic([
+      "United Kingdom",
+      "Netherland",
+      "Germany"
+      ]);
+  StorageFileLogs
+  | where ingestion_time() > ago(10m)
+  | where OperationName == "GetFile"
+  | where StatusCode == "200"
+  | extend IPAddress = tostring(split(CallerIpAddress, ':')[0])
+  | extend GeoInformationFromIP = geo_info_from_ip_address(IPAddress)
+  | extend Country = tostring(GeoInformationFromIP.country)
+  | extend State = tostring(GeoInformationFromIP.state)
+  | extend City = tostring(GeoInformationFromIP.city)
+  | where Country !in (KnownCountries)
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: AllEntities
+    groupByEntities: []
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: AlertPerResult
+entityMappings:
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+suppressionDuration: 5h
+

@@ -1,0 +1,64 @@
+id: 1c512bde-efba-4bea-a02e-bc63bd1298a3
+name: Potential Storage Enumeration or Brute Force Attack
+version: 1.0.0
+kind: Scheduled
+description: |-
+  Detected a pattern of failed access attempts against Azure Blob Storage where the failure rate exceeded 90% for a single source IP.
+
+  This activity indicated potential malicious intent, specifically:
+  * Blind Enumeration: The source IP likely attempted to guess blob names or container structures to discover valid resources.
+  * Brute Force: The source likely attempted repeatedly to bypass authentication using invalid keys or tokens.
+  * Reconnaissance: The source appeared to be mapping cloud infrastructure availability.
+severity: Medium
+queryFrequency: 5m
+queryPeriod: 6m
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+- Discovery
+- CredentialAccess
+- Collection
+relevantTechniques:
+- T1619
+- T1110
+- T1580
+- T1530
+query: |
+  let AllBlobActions= StorageBlobLogs
+      | extend IPAddress = tostring(split(CallerIpAddress, ':')[0])
+      | summarize Count=count() by _ResourceId, AccountName, IPAddress, StatusText, OperationName, Category;
+  AllBlobActions
+  | where StatusText == "Success"
+  | project-rename SuccessCount = Count
+  | join kind=inner (AllBlobActions
+      | where StatusText != "Success"
+      | project-rename NonSuccessCount = Count)
+      on AccountName, IPAddress
+  | extend PercentageOfFailedRequests = (todouble(NonSuccessCount) / (toint(SuccessCount) + toint(NonSuccessCount))) * 100
+  | where PercentageOfFailedRequests > 90
+suppressionEnabled: false
+incidentConfiguration:
+  createIncident: true
+  groupingConfiguration:
+    enabled: true
+    reopenClosedIncident: false
+    lookbackDuration: 5h
+    matchingMethod: Selected
+    groupByEntities:
+    - IP
+    - AzureResource
+    groupByAlertDetails: []
+    groupByCustomDetails: []
+eventGroupingSettings:
+  aggregationKind: SingleAlert
+entityMappings:
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: IPAddress
+- entityType: AzureResource
+  fieldMappings:
+  - identifier: ResourceId
+    columnName: _ResourceId
+suppressionDuration: 5h
+

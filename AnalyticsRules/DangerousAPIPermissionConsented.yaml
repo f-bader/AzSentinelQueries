@@ -17,7 +17,7 @@ queryPeriod: 31m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
-  - Persistence
+- Persistence
 query: |-
   let DangerousAPIPermissions = dynamic({
       "9e3f62cf-ca93-4989-b6ce-bf83c28f9fe8": "RoleManagement.ReadWrite.Directory -> Directly promote any user to global admin",
@@ -55,20 +55,25 @@ incidentConfiguration:
 eventGroupingSettings:
   aggregationKind: SingleAlert
 alertDetailsOverride:
-  alertDescriptionFormat: "A high impact Graph API permission was granted to an application.\n\nThe granted API permission was {{PotentialImpact}} \n\nPlease verify if this API permission is needed by this application and if so make sure to add it to the watchlist \"HighRiskApps\""
+  alertDescriptionFormat: |-
+    A high impact Graph API permission was granted to an application.
+
+    The granted API permission was {{PotentialImpact}} 
+
+    Please verify if this API permission is needed by this application and if so make sure to add it to the watchlist "HighRiskApps"
   alertDynamicProperties: []
 customDetails:
-  ServicePrincipalId: ServicePrincipalObjectID
-  ServicePrincipal: ServicePrincipalDisplayName
   AddedPermission: NewAPIPermission
+  ServicePrincipal: ServicePrincipalDisplayName
+  ServicePrincipalId: ServicePrincipalObjectID
 entityMappings:
-  - entityType: Account
-    fieldMappings:
-      - identifier: FullName
-        columnName: InitiatingUserOrApp
-  - entityType: IP
-    fieldMappings:
-      - identifier: Address
-        columnName: InitiatingIpAddress
+- entityType: Account
+  fieldMappings:
+  - identifier: FullName
+    columnName: InitiatingUserOrApp
+- entityType: IP
+  fieldMappings:
+  - identifier: Address
+    columnName: InitiatingIpAddress
 suppressionDuration: 5h
 suppressionEnabled: false

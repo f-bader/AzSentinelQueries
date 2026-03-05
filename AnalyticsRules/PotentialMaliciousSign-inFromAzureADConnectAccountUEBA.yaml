@@ -1,6 +1,6 @@
 id: a4fe163e-aec6-407c-8240-ef280742a5f4
 name: Potential malicious sign-in from Entra Connect account (UEBA)
-version: 1.0.2
+version: 1.0.3
 kind: Scheduled
 description: The Microsoft Entra Connect account is accessing an ressource that it must not access. This is a high-fidelity sign of malicious actions.
 severity: High
@@ -15,6 +15,7 @@ relevantTechniques:
 query: |-
   let DirectorySyncAdmins = (IdentityInfo
       | where TimeGenerated > ago(14d)
+      | summarize arg_max(TimeGenerated, *) by AccountObjectId
       | where AssignedRoles contains "Directory Synchronization Accounts"
       | distinct AccountUPN);
   union isfuzzy=true SigninLogs, AADNonInteractiveUserSignInLogs

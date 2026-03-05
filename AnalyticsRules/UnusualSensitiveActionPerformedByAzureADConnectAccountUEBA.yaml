@@ -1,6 +1,6 @@
 id: 23fd3ffc-3d2f-4415-89ad-ce2b6450a5c3
 name: Unusual sensitive action performed by Entra Connect account (UEBA)
-version: 1.0.2
+version: 1.0.3
 kind: Scheduled
 description: The Microsoft Entra Connect account is performing different sensitive actions that must not be done by this account. This is a sign of compromise for this accounts and should result in immediate action.
 severity: High
@@ -23,6 +23,7 @@ relevantTechniques:
 query: |-
   let DirectorySyncAdmins = (IdentityInfo
       | where TimeGenerated > ago(14d)
+      | summarize arg_max(TimeGenerated, *) by AccountObjectId
       | where AssignedRoles contains "Directory Synchronization Accounts"
       | distinct AccountUPN);
   let SensitiveActions = dynamic(["Update service principal", "Add service principal credentials", "Add owner to service principal", "Add delegated permission grant"]);

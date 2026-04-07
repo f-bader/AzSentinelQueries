@@ -1,6 +1,6 @@
 id: c44269aa-9879-42d9-a8f4-56a93bb8c6ac
 name: Granting of High-Risk Privilege Escalation Permissions to Service Principal
-version: 1.0.4
+version: 1.0.5
 kind: Scheduled
 description: |
   This rule identifies when a Service Principal is granted specific, high-risk Application Permissions for Microsoft Graph that can lead to immediate tenant-wide privilege escalation.

@@ -60,7 +60,7 @@ alertDetailsOverride:
 
     The granted API permission was {{PotentialImpact}} 
 
-    Please verify if this API permission is needed by this application and if so make sure to add it to the watchlist "HighRiskApps"
+    Please verify if this API permission is needed by this application.
   alertDynamicProperties: []
 customDetails:
   AddedPermission: NewAPIPermission

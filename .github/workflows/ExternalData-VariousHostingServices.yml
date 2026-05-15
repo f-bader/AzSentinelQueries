@@ -1,0 +1,86 @@
+name: Pull external data source Various Hosting Services
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 */6 * * *"
+
+jobs:
+  pull-external-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Pull external data and modify if needed
+        shell: pwsh
+        run: |
+          if (-not (Test-Path -Path "${{ github.workspace }}/ExternalData/")) { New-Item -ItemType Directory -Path "${{ github.workspace }}/ExternalData/" -ErrorAction SilentlyContinue }
+
+          function Get-AddressFamily {
+              param([string]$IPRange)
+              try {
+                  return [IPAddress]($IPRange -replace '/.*') | Select-Object -ExpandProperty AddressFamily
+              } catch {
+                  return $null
+              }
+          }
+
+          # Vultr - JSON geofeed
+          $VultrRaw = Invoke-RestMethod -Uri 'https://geofeed.constant.com/?json'
+          $Vultr = foreach ($s in $VultrRaw.subnets) {
+              [PSCustomObject]@{
+                  Service       = 'Vultr'
+                  IPRange       = $s.ip_prefix
+                  Country       = $s.alpha2code
+                  LanguageCode  = $s.region
+                  City          = $s.city
+                  PostalCode    = $s.postal_code
+                  AddressFamily = Get-AddressFamily $s.ip_prefix
+              }
+          }
+          $Vultr | Select-Object IPRange, Country, LanguageCode, City, PostalCode, AddressFamily | Export-Csv -Path "${{ github.workspace }}/ExternalData/Vultr.csv" -Force
+
+          # DigitalOcean - headerless CSV
+          $DORaw = Invoke-WebRequest -Uri 'https://digitalocean.com/geo/google.csv' | Select-Object -ExpandProperty Content | ConvertFrom-Csv -Header @('IPRange', 'Country', 'LanguageCode', 'City', 'PostalCode')
+          $DigitalOcean = foreach ($r in $DORaw) {
+              if ($r.IPRange -match '^#' -or [string]::IsNullOrWhiteSpace($r.IPRange)) { continue }
+              [PSCustomObject]@{
+                  Service       = 'DigitalOcean'
+                  IPRange       = $r.IPRange
+                  Country       = $r.Country
+                  LanguageCode  = $r.LanguageCode
+                  City          = $r.City
+                  PostalCode    = $r.PostalCode
+                  AddressFamily = Get-AddressFamily $r.IPRange
+              }
+          }
+          $DigitalOcean | Select-Object IPRange, Country, LanguageCode, City, PostalCode, AddressFamily | Export-Csv -Path "${{ github.workspace }}/ExternalData/DigitalOcean.csv" -Force
+
+          # Linode - RFC 8805 geofeed CSV with comment lines
+          $LinodeContent = Invoke-WebRequest -Uri 'https://geoip.linode.com/' | Select-Object -ExpandProperty Content
+          $LinodeLines = $LinodeContent -split "`n" | Where-Object { $_ -and $_ -notmatch '^\s*#' }
+          $LinodeRaw = $LinodeLines | ConvertFrom-Csv -Header @('IPRange', 'Country', 'LanguageCode', 'City', 'PostalCode')
+          $Linode = foreach ($r in $LinodeRaw) {
+              if ([string]::IsNullOrWhiteSpace($r.IPRange)) { continue }
+              [PSCustomObject]@{
+                  Service       = 'Linode'
+                  IPRange       = $r.IPRange
+                  Country       = $r.Country
+                  LanguageCode  = $r.LanguageCode
+                  City          = $r.City
+                  PostalCode    = $r.PostalCode
+                  AddressFamily = Get-AddressFamily $r.IPRange
+              }
+          }
+          $Linode | Select-Object IPRange, Country, LanguageCode, City, PostalCode, AddressFamily | Export-Csv -Path "${{ github.workspace }}/ExternalData/Linode.csv" -Force
+
+          # Consolidated CSV across all three services
+          $All = @($Vultr) + @($DigitalOcean) + @($Linode)
+          $All | Select-Object Service, IPRange, Country, LanguageCode, City, PostalCode, AddressFamily | Export-Csv -Path "${{ github.workspace }}/ExternalData/VariousHostingServices.csv" -Force
+
+      - name: Commit updated data to repo
+        uses: stefanzweifel/git-auto-commit-action@v5

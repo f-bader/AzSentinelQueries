@@ -8,7 +8,7 @@ description: |-
   While public access to storage containers may be intentional, attackers frequently target these containers to look for "soft-deleted" data or previous versions of files. They do this to uncover sensitive information (such as hardcoded credentials, API keys, or PII) that may have been present in an older version of a file but removed in the current "live" version.
 severity: Low
 queryFrequency: 10m
-queryPeriod: 12m
+queryPeriod: 22m
 triggerOperator: gt
 triggerThreshold: 0
 tactics:
@@ -33,6 +33,7 @@ query: |-
   | join kind=inner (VersionEnumeration) on ObjectKey, IPAddress
   | extend TimeDifference = datetime_diff('minute', TimeGenerated, EnumerationTimeGenerated)
   | where TimeDifference between (0 .. 10)
+  | where TimeGenerated >= ago(10m) or EnumerationTimeGenerated >= ago(10m)
 suppressionEnabled: false
 incidentConfiguration:
   createIncident: true
